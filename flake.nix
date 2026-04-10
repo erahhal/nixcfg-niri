@@ -11,17 +11,18 @@
   };
 
   outputs = { self, nixpkgs, dms-shell, ... }: {
-    nixosModules = {
-      niri = import ./modules/desktop/niri;
-      dms = import ./modules/desktop/dms-shell;
-      startup-apps = import ./modules/desktop/startup-apps;
-      # Pass through dms-shell upstream modules
-      dms-shell-default = dms-shell.nixosModules.default;
-      dms-shell-greeter = dms-shell.nixosModules.greeter;
+    # Single import for NixOS modules — includes upstream dms-shell + our config
+    nixosModules.default = { ... }: {
+      imports = [
+        dms-shell.nixosModules.default
+        dms-shell.nixosModules.greeter
+        (import ./modules/desktop/niri)
+        (import ./modules/desktop/dms-shell)
+        (import ./modules/desktop/startup-apps)
+      ];
     };
 
-    homeModules = {
-      dms-shell = dms-shell.homeModules.default;
-    };
+    # Single import for home-manager modules
+    homeModules.default = dms-shell.homeModules.default;
   };
 }
