@@ -380,53 +380,42 @@ in
     name = "plugin settings";
   };
 
-  # Niri keybinding overrides for DMS
-  xdg.configFile."niri/dms.kdl".text = ''
-    binds {
-      // DMS Application Launcher and Notification Center
-      // Temporarily disabled as it doesn't run arbitray executables
-      Mod+P hotkey-overlay-title="DMS Application Launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
-      Mod+N hotkey-overlay-title="DMS Notification Center" { spawn "dms" "ipc" "call" "notifications" "toggle"; }
+  # DMS keybinding overrides merged into niri settings
+  programs.niri.settings = {
+    binds = {
+      # DMS Application Launcher and Notification Center
+      "Mod+P" = { hotkey-overlay.title = "DMS Application Launcher"; action.spawn = [ "dms" "ipc" "call" "spotlight" "toggle" ]; };
+      "Mod+N" = { hotkey-overlay.title = "DMS Notification Center"; action.spawn = [ "dms" "ipc" "call" "notifications" "toggle" ]; };
 
-      // Color picker - use DMS color picker (auto-copy hex to clipboard)
-      Mod+A hotkey-overlay-title="DMS Color Picker" { spawn "dms" "color" "pick" "--hex" "-a"; }
+      # Color picker
+      "Mod+A" = { hotkey-overlay.title = "DMS Color Picker"; action.spawn = [ "dms" "color" "pick" "--hex" "-a" ]; };
 
-      // Screenshots - use DMS screenshot (opens in editor for annotation)
-      Ctrl+Shift+3 hotkey-overlay-title="Capture Screen" { spawn "dms" "ipc" "call" "niri" "screenshotScreen"; }
-      Ctrl+Shift+4 hotkey-overlay-title="Capture Selection" { spawn "dms" "ipc" "call" "niri" "screenshot"; }
-      Ctrl+Shift+5 hotkey-overlay-title="Capture Window" { spawn "dms" "ipc" "call" "niri" "screenshotWindow"; }
+      # Screenshots - DMS screenshot (opens in editor for annotation)
+      "Ctrl+Shift+3" = { hotkey-overlay.title = "Capture Screen"; action.spawn = [ "dms" "ipc" "call" "niri" "screenshotScreen" ]; };
+      "Ctrl+Shift+4" = { hotkey-overlay.title = "Capture Selection"; action.spawn = [ "dms" "ipc" "call" "niri" "screenshot" ]; };
+      "Ctrl+Shift+5" = { hotkey-overlay.title = "Capture Window"; action.spawn = [ "dms" "ipc" "call" "niri" "screenshotWindow" ]; };
 
-      ${if useHyprlock then ''
-      // Lock - use hyprlock (DMS lock crashes on suspend/resume and monitor disconnect)
-      Mod+X hotkey-overlay-title="Lock the Screen" { spawn "sh" "-c" "${hyprlockCmd}"; }
-      '' else ''
-      // Lock - use DMS lock
-      Mod+X hotkey-overlay-title="Lock the Screen: DMS" allow-when-locked=true { spawn "dms" "ipc" "call" "lock" "lock"; }
-      ''}
+      # Lock
+      "Mod+X" = if useHyprlock then {
+        hotkey-overlay.title = "Lock the Screen";
+        action.spawn = [ "sh" "-c" hyprlockCmd ];
+      } else {
+        hotkey-overlay.title = "Lock the Screen: DMS";
+        allow-when-locked = true;
+        action.spawn = [ "dms" "ipc" "call" "lock" "lock" ];
+      };
 
-      // Power actions - with confirmation dialogs
-      Mod+Shift+S hotkey-overlay-title="Suspend" { spawn "${suspend-dialog}"; }
+      # Power actions
+      "Mod+Shift+S" = { hotkey-overlay.title = "Suspend"; action.spawn = "${suspend-dialog}"; };
+      "Ctrl+Alt+Delete".action.quit = {};
+    };
 
-      // Ctrl+Alt+Delete - quit niri (shows confirmation)
-      Ctrl+Alt+Delete { quit; }
-    }
+    switch-events.lid-close.action.spawn = [ "${dms-suspend}" ];
 
-    switch-events {
-      // Lid close - lock then suspend
-      lid-close { spawn "${dms-suspend}"; }
-    }
-
-    ${lib.optionalString useHyprlock ''
-    // Start hypridle for idle management (lock, DPMS, before-sleep hook)
-    // Replaces DMS internal idle/lock which crashes on suspend/resume
-    spawn-sh-at-startup "systemctl --user restart hypridle"
-    ''}
-  '';
-
-  # Include DMS keybindings in niri config
-  programs.niri.config = lib.mkAfter ''
-    include "dms.kdl"
-  '';
+    spawn-at-startup = lib.optionals useHyprlock [
+      { sh = "systemctl --user restart hypridle"; }
+    ];
+  };
 
   # Default plugin settings file - merged into plugin_settings.json on activation
   xdg.configFile."DankMaterialShell/default-plugin_settings.json".text =
