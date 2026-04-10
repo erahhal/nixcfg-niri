@@ -32,7 +32,6 @@
       imports = [
         dms-shell.homeModules.default
         niri-flake.homeModules.niri
-        niri-flake.homeModules.config
       ];
     };
   };
