@@ -26,14 +26,12 @@
         (import ./modules/desktop/startup-apps)
       ];
 
-      # niri-flake homeModules don't use osConfig so they're safe in sharedModules.
-      # dms-shell homeModules DO use osConfig so they must go in per-user imports.
-      home-manager.sharedModules = [
-        niri-flake.homeModules.niri
-      ];
     };
 
-    # dms-shell home module (imported per-user, not via sharedModules, because it uses osConfig)
-    homeModules.dms-shell = dms-shell.homeModules.default;
+    # Home modules for per-user import (NOT sharedModules — osConfig isn't available there)
+    homeModules = {
+      dms-shell = dms-shell.homeModules.default;
+      niri = niri-flake.homeModules.niri;
+    };
   };
 }
