@@ -23,7 +23,6 @@
         dms-shell.nixosModules.greeter
         (import ./modules/desktop/niri)
         (import ./modules/desktop/dms-shell)
-        (import ./modules/desktop/startup-apps)
       ];
 
     };
@@ -32,6 +31,7 @@
     homeModules = {
       dms-shell = dms-shell.homeModules.default;
       niri = niri-flake.homeModules.niri;
+      startup-apps = import ./modules/desktop/startup-apps;
     };
   };
 }
