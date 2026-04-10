@@ -383,34 +383,34 @@ in
   # DMS keybinding overrides merged into niri settings
   programs.niri.settings = {
     binds = {
-      # DMS Application Launcher and Notification Center
-      "Mod+P" = { hotkey-overlay.title = "DMS Application Launcher"; action.spawn = [ "dms" "ipc" "call" "spotlight" "toggle" ]; };
-      "Mod+N" = { hotkey-overlay.title = "DMS Notification Center"; action.spawn = [ "dms" "ipc" "call" "notifications" "toggle" ]; };
+      # DMS overrides for base niri keybindings (mkForce to override niri/home.nix)
+      "Mod+P" = lib.mkForce { hotkey-overlay.title = "DMS Application Launcher"; action.spawn = [ "dms" "ipc" "call" "spotlight" "toggle" ]; };
+      "Mod+N" = lib.mkForce { hotkey-overlay.title = "DMS Notification Center"; action.spawn = [ "dms" "ipc" "call" "notifications" "toggle" ]; };
 
       # Color picker
-      "Mod+A" = { hotkey-overlay.title = "DMS Color Picker"; action.spawn = [ "dms" "color" "pick" "--hex" "-a" ]; };
+      "Mod+A" = lib.mkForce { hotkey-overlay.title = "DMS Color Picker"; action.spawn = [ "dms" "color" "pick" "--hex" "-a" ]; };
 
       # Screenshots - DMS screenshot (opens in editor for annotation)
-      "Ctrl+Shift+3" = { hotkey-overlay.title = "Capture Screen"; action.spawn = [ "dms" "ipc" "call" "niri" "screenshotScreen" ]; };
-      "Ctrl+Shift+4" = { hotkey-overlay.title = "Capture Selection"; action.spawn = [ "dms" "ipc" "call" "niri" "screenshot" ]; };
-      "Ctrl+Shift+5" = { hotkey-overlay.title = "Capture Window"; action.spawn = [ "dms" "ipc" "call" "niri" "screenshotWindow" ]; };
+      "Ctrl+Shift+3" = lib.mkForce { hotkey-overlay.title = "Capture Screen"; action.spawn = [ "dms" "ipc" "call" "niri" "screenshotScreen" ]; };
+      "Ctrl+Shift+4" = lib.mkForce { hotkey-overlay.title = "Capture Selection"; action.spawn = [ "dms" "ipc" "call" "niri" "screenshot" ]; };
+      "Ctrl+Shift+5" = lib.mkForce { hotkey-overlay.title = "Capture Window"; action.spawn = [ "dms" "ipc" "call" "niri" "screenshotWindow" ]; };
 
       # Lock
-      "Mod+X" = if useHyprlock then {
+      "Mod+X" = lib.mkForce (if useHyprlock then {
         hotkey-overlay.title = "Lock the Screen";
         action.spawn = [ "sh" "-c" hyprlockCmd ];
       } else {
         hotkey-overlay.title = "Lock the Screen: DMS";
         allow-when-locked = true;
         action.spawn = [ "dms" "ipc" "call" "lock" "lock" ];
-      };
+      });
 
       # Power actions
-      "Mod+Shift+S" = { hotkey-overlay.title = "Suspend"; action.spawn = "${suspend-dialog}"; };
-      "Ctrl+Alt+Delete".action.quit = {};
+      "Mod+Shift+S" = lib.mkForce { hotkey-overlay.title = "Suspend"; action.spawn = "${suspend-dialog}"; };
+      "Ctrl+Alt+Delete" = lib.mkForce { action.quit = {}; };
     };
 
-    switch-events.lid-close.action.spawn = [ "${dms-suspend}" ];
+    switch-events.lid-close = lib.mkForce { action.spawn = [ "${dms-suspend}" ]; };
 
     spawn-at-startup = lib.optionals useHyprlock [
       { sh = "systemctl --user restart hypridle"; }
