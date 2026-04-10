@@ -50,7 +50,7 @@ in
     };
 
     programs = {
-      niri.enable = true;
+      # niri.enable handled by niri-flake.nixosModules.niri
       dconf.enable = true;
       xwayland.enable = true;
     };
