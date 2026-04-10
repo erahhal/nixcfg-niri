@@ -28,7 +28,7 @@
     };
 
     # Home-manager modules: dms-shell + niri-flake settings support
-    homeModules.default = { ... }: {
+    homeModules.default = {
       imports = [
         dms-shell.homeModules.default
         niri-flake.homeModules.niri
