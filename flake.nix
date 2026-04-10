@@ -29,11 +29,6 @@
     };
 
     # Single import for home-manager modules
-    homeModules.default = { ... }: {
-      imports = [
-        dms-shell.homeModules.default
-        niri-flake.homeModules.niri
-      ];
-    };
+    homeModules.default = dms-shell.homeModules.default;
   };
 }
