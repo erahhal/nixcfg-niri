@@ -21,14 +21,19 @@
       imports = [
         dms-shell.nixosModules.default
         dms-shell.nixosModules.greeter
-        niri-flake.nixosModules.niri
         (import ./modules/desktop/niri)
         (import ./modules/desktop/dms-shell)
         (import ./modules/desktop/startup-apps)
       ];
     };
 
-    # DMS-shell home module (niri-flake HM config injected via nixosModule.niri sharedModules)
-    homeModules.default = dms-shell.homeModules.default;
+    # Home modules: dms-shell + niri-flake config (for programs.niri.settings)
+    homeModules.default = {
+      imports = [
+        dms-shell.homeModules.default
+        niri-flake.homeModules.niri
+        niri-flake.homeModules.config
+      ];
+    };
   };
 }
