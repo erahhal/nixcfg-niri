@@ -424,7 +424,7 @@ in
   '';
 
   # Include DMS keybindings in niri config
-  xdg.configFile."niri/config.kdl".text = lib.mkAfter ''
+  programs.niri.config = lib.mkAfter ''
     include "dms.kdl"
   '';
 
