@@ -490,12 +490,7 @@ in
       { matches = [{ app-id = "^steam_app_.*$"; }]; open-fullscreen = true; open-focused = true; }
     ];
 
-    recent-windows.binds = {
-      "Alt+Tab".action.next-window = {};
-      "Alt+Shift+Tab".action.previous-window = {};
-      "Mod+Tab".action.next-window = {};
-      "Mod+Shift+Tab".action.previous-window = {};
-    };
+    # recent-windows binds use niri defaults (Alt+Tab, Mod+Tab)
 
     binds = {
       # Prevent errant middle-click paste
