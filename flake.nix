@@ -21,14 +21,10 @@
       imports = [
         dms-shell.nixosModules.default
         dms-shell.nixosModules.greeter
-        # niri-flake.nixosModules.niri  # temporarily disabled for debugging
+        niri-flake.nixosModules.niri
         (import ./modules/desktop/niri)
         (import ./modules/desktop/dms-shell)
         (import ./modules/desktop/startup-apps)
-      ];
-      # Inject dms-shell home module into all home-manager users
-      home-manager.sharedModules = [
-        dms-shell.homeModules.default
       ];
     };
 
