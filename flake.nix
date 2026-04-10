@@ -25,9 +25,14 @@
         (import ./modules/desktop/dms-shell)
         (import ./modules/desktop/startup-apps)
       ];
+      # Inject niri-flake + dms-shell home modules into all home-manager users
+      home-manager.sharedModules = [
+        dms-shell.homeModules.default
+        niri-flake.homeModules.niri
+      ];
     };
 
-    # Home-manager modules: dms-shell + niri-flake settings support
+    # Kept for standalone home-manager usage (without NixOS)
     homeModules.default = {
       imports = [
         dms-shell.homeModules.default
