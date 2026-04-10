@@ -28,12 +28,7 @@
       ];
     };
 
-    # Kept for standalone home-manager usage (without NixOS)
-    homeModules.default = {
-      imports = [
-        dms-shell.homeModules.default
-        niri-flake.homeModules.niri
-      ];
-    };
+    # DMS-shell home module (niri-flake HM config injected via nixosModule.niri sharedModules)
+    homeModules.default = dms-shell.homeModules.default;
   };
 }
