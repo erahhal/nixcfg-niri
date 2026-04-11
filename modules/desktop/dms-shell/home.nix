@@ -398,7 +398,7 @@ in
       # Lock
       "Mod+X" = lib.mkForce (if useHyprlock then {
         hotkey-overlay.title = "Lock the Screen";
-        action.spawn = [ "sh" "-c" hyprlockCmd ];
+        action.spawn = [ "sh" "-c" "${hyprlockCmd}" ];
       } else {
         hotkey-overlay.title = "Lock the Screen: DMS";
         allow-when-locked = true;
