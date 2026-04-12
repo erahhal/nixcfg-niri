@@ -488,6 +488,7 @@ in
         default-column-width = { proportion = 1.0; };
       }
       { matches = [{ app-id = "^steam_app_.*$"; }]; open-fullscreen = true; open-focused = true; }
+      { matches = [{ app-id = "^gamescope$"; }]; open-fullscreen = true; open-focused = true; }
     ];
 
     # recent-windows binds use niri defaults (Alt+Tab, Mod+Tab)
