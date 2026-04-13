@@ -224,30 +224,6 @@ let
   swayLockCommand = pkgs.callPackage ../../../pkgs/sway-lock-command { };
   hyprlockCommand = pkgs.callPackage ../../../pkgs/hyprlock-command { inputs = inputs; pkgs = pkgs; };
 
-  toggle-thinkvision-input = pkgs.writeShellScript "toggle-input" ''
-    MONITOR_CONNECTED=$(${pkgs.ddcutil}/bin/ddcutil detect | grep -i "P40w-20")
-    if [ -z "$MONITOR_CONNECTED" ]; then
-      echo "ThinkVision P40w-20 monitor not detected. No action taken."
-      exit 1
-    fi
-    BUS_NUMBER=$(${pkgs.ddcutil}/bin/ddcutil detect | grep -B 4 "P40w-20" | grep "I2C bus:" | sed -E 's/.*\/dev\/i2c-([0-9]+).*/\1/')
-    if [ -z "$BUS_NUMBER" ]; then
-      echo "Could not determine I2C bus for ThinkVision P40w-20. No action taken."
-      exit 1
-    fi
-    echo "Found ThinkVision P40w-20 on bus $BUS_NUMBER"
-    CURRENT_INPUT=$(${pkgs.ddcutil}/bin/ddcutil --bus $BUS_NUMBER getvcp 60 | grep -o "sl=0x[0-9a-f]\+" | cut -d'x' -f2)
-    CURRENT_INPUT=''${CURRENT_INPUT#0x}
-    CURRENT_INPUT=$(echo "$CURRENT_INPUT" | tr '[:upper:]' '[:lower:]')
-    if [ "$CURRENT_INPUT" = "0f" ] || [ "$CURRENT_INPUT" = "f" ]; then
-      echo "Switching ThinkVision P40w-20 to input 0x31"
-      ${pkgs.ddcutil}/bin/ddcutil --bus $BUS_NUMBER setvcp 60 0x31
-    elif [ "$CURRENT_INPUT" = "31" ]; then
-      echo "Switching ThinkVision P40w-20 to DisplayPort-1 (0x0F)"
-      ${pkgs.ddcutil}/bin/ddcutil --bus $BUS_NUMBER setvcp 60 0x0f
-    fi
-  '';
-
   adjust-window-sizes = pkgs.writeShellScript "niri-adjust-window-sizes" ''
     last_workspace_id=""
     last_window_count=0
@@ -506,7 +482,6 @@ in
       "Mod+X" = { hotkey-overlay.title = "Lock the Screen: hyprlock"; allow-when-locked = true; action.spawn = "${hyprlockCommand}"; };
       "Mod+E" = { hotkey-overlay.title = "Toggle fcitx5 daemon"; action.spawn = "${toggle-fcitx}"; };
       "Mod+Y" = { hotkey-overlay.title = "Run Kanshi"; allow-when-locked = true; action.spawn = [ "systemctl" "--user" "restart" "kanshi" ]; };
-      "Mod+G" = { hotkey-overlay.title = "Switch ThinkVision Monitor Input"; allow-when-locked = true; action.spawn = "${toggle-thinkvision-input}"; };
       "Super+Alt+S" = { allow-when-locked = true; hotkey-overlay = { hidden = true; }; action.spawn = [ "pkill" "orca" "||" "exec" "orca" ]; };
 
       # Volume
@@ -674,16 +649,16 @@ in
     };
 
     workspaces = {
-      "01-one" = { name = "one"; open-on-output = "eDP-1"; };
-      "02-two" = { name = "two"; open-on-output = "eDP-1"; };
-      "03-three" = { name = "three"; open-on-output = "eDP-1"; };
-      "04-four" = { name = "four"; open-on-output = "eDP-1"; };
-      "05-five" = { name = "five"; open-on-output = "eDP-1"; };
-      "06-six" = { name = "six"; open-on-output = "eDP-1"; };
-      "07-seven" = { name = "seven"; open-on-output = "eDP-1"; };
-      "08-eight" = { name = "eight"; open-on-output = "eDP-1"; };
-      "09-nine" = { name = "nine"; open-on-output = "eDP-1"; };
-      "10-ten" = { name = "ten"; open-on-output = "eDP-1"; };
+      "01-one" = { name = "one"; };
+      "02-two" = { name = "two"; };
+      "03-three" = { name = "three"; };
+      "04-four" = { name = "four"; };
+      "05-five" = { name = "five"; };
+      "06-six" = { name = "six"; };
+      "07-seven" = { name = "seven"; };
+      "08-eight" = { name = "eight"; };
+      "09-nine" = { name = "nine"; };
+      "10-ten" = { name = "ten"; };
     };
   };
 }
