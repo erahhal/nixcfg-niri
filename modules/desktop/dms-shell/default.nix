@@ -22,6 +22,7 @@ let
   };
 
   dms-network-monitor = pkgs.callPackage ../../../pkgs/dms-network-monitor {};
+  dms-theme-toggle = pkgs.callPackage ../../../pkgs/dms-theme-toggle {};
 in
 {
   key = "nixcfg/desktop/dms";
@@ -47,6 +48,10 @@ in
         EasyEffects = {
           enable = true;
           src = dms-easyeffects;
+        };
+        ThemeToggle = {
+          enable = true;
+          src = dms-theme-toggle;
         };
       };
       enableSystemMonitoring = true;

@@ -1,0 +1,9 @@
+{
+  "id": "themeToggle",
+  "name": "Theme Toggle",
+  "description": "Toggle between light and dark themes with sun/moon icon",
+  "version": "1.0.0",
+  "author": "erahhal",
+  "type": "widget",
+  "component": "./ThemeToggle.qml"
+}

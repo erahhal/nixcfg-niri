@@ -35,6 +35,9 @@ let
     easyEffects = {
       enabled = true;
     };
+    themeToggle = {
+      enabled = true;
+    };
   };
 
   # Lock screen then suspend
@@ -215,11 +218,19 @@ let
           enabled = true;
         }
         {
+          id = "themeToggle";
+          enabled = true;
+        }
+        {
           id = "idleInhibitor";
           enabled = true;
         }
         {
           id = "notificationButton";
+          enabled = true;
+        }
+        {
+          id = "powerMenuButton";
           enabled = true;
         }
       ];
