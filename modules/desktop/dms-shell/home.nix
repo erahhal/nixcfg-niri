@@ -405,6 +405,9 @@ in
         action.spawn = [ "dms" "ipc" "call" "lock" "lock" ];
       });
 
+      # Theme toggle
+      "Mod+Shift+T" = lib.mkForce { hotkey-overlay.title = "Toggle Dark/Light Theme"; action.spawn = [ "toggle-theme" ]; };
+
       # Power actions
       "Mod+Shift+S" = lib.mkForce { hotkey-overlay.title = "Suspend"; action.spawn = "${suspend-dialog}"; };
       "Ctrl+Alt+Delete" = lib.mkForce { action.quit = {}; };
