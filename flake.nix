@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     dms-shell = {
-      url = "github:AvengeMedia/DankMaterialShell/v1.4.4";
+      url = "github:AvengeMedia/DankMaterialShell/v1.4.4.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

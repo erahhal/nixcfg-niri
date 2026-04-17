@@ -384,7 +384,7 @@ in
     prefer-no-csd = true;
     screenshot-path = "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png";
 
-    animations.workspace-switch.spring = {
+    animations.workspace-switch.kind.spring = {
       stiffness = 10000;
       damping-ratio = 1.0;
       epsilon = 0.0001;
