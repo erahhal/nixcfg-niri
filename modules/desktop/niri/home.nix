@@ -294,6 +294,7 @@ in
         numlock = true;
       };
       touchpad = {
+        natural-scroll = false;
         click-method = "clickfinger";
         dwt = true;
         dwtp = true;

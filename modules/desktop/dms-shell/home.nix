@@ -257,6 +257,7 @@ let
 
     ## Style
     matugenTemplateFirefox = false; # disables creating firefox.css file on manual config change. What are the ramifications?
+    matugenTemplateNeovim = false; # neovim themed by nixvim-config (tokyonight), not matugen
     transparency = 1;
     widgetTransparency = 1;
     squareCorners = false;
