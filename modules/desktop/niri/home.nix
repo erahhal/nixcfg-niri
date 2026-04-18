@@ -1,18 +1,10 @@
-{ osConfig, lib, inputs, pkgs, ... }:
+{ osConfig, lib, pkgs, ... }:
 
 let
   niri = "${pkgs.niri}/bin/niri";
   jq = "${pkgs.jq}/bin/jq";
-  rofi = ''"${pkgs.rofi}/bin/rofi" "-show" "drun" "-theme" "~/.config/rofi/launcher.rasi"'';
   ## @TODO: Move to a service
   dynamic-float-rules = pkgs.callPackage ./dynamic-float-rules.nix {};
-  toggle-fcitx = pkgs.writeShellScript "toggle-fcitx" ''
-    if systemctl --user is-active --quiet fcitx5-daemon; then
-      systemctl --user stop fcitx5-daemon
-    else
-      systemctl --user start fcitx5-daemon
-    fi
-  '';
   clear-notifications = pkgs.writeShellScript "clear-notifications" ''
     # Close all notifications by iterating through possible IDs
     # freedesktop.org CloseNotification silently ignores non-existent IDs
@@ -25,20 +17,22 @@ let
     done
     wait
   '';
-  exit-niri = pkgs.writeShellScript "exit-niri" ''
-    ${builtins.readFile ../../../scripts/kill-all-apps.sh}
+  killAppsScript =
+    let
+      killOne = app: ''
+        pkill ${lib.escapeShellArg app} 2>/dev/null || true
+        ${pkgs.procps}/bin/pidof ${lib.escapeShellArg app} 2>/dev/null | xargs -r kill 2>/dev/null || true
+      '';
+    in
+      lib.concatStrings (map killOne osConfig.nixcfg-niri.desktop.killOnExit);
 
+  exit-niri = pkgs.writeShellScript "exit-niri" ''
+    ${killAppsScript}
     ${niri} msg action quit --skip-confirmation
   '';
   reboot = pkgs.writeShellScript "kill-reboot" ''
-    ${builtins.readFile ../../../scripts/kill-all-apps.sh}
-
+    ${killAppsScript}
     systemctl reboot
-  '';
-  poweroff = pkgs.writeShellScript "kill-poweroff" ''
-    ${builtins.readFile ../../../scripts/kill-all-apps.sh}
-
-    systemctl poweroff
   '';
 
   kill-active = pkgs.writeShellScript "niri-kill-active.sh" ''
@@ -95,46 +89,6 @@ let
     close_after_timeout "$TIMESTAMP" &
   '';
 
-  toggle-tabbed = pkgs.writeShellScript "niri-toggle-tabbed" ''
-    # Get current workspace ID from focused window
-    current_workspace=$(niri msg -j focused-window | jq -r '.workspace_id // empty')
-
-    # If no focused window, get first workspace with windows
-    if [ -z "$current_workspace" ]; then
-        current_workspace=$(niri msg -j windows | jq -r '.[0].workspace_id // empty')
-    fi
-
-    # Exit if no workspace found
-    [ -z "$current_workspace" ] && exit 0
-
-    # Get all windows in current workspace
-    windows=$(niri msg -j windows | jq -r ".[] | select(.workspace_id == $current_workspace) | .id")
-
-    # Convert to array
-    window_ids=($windows)
-
-    # Exit if no windows
-    [ ''${#window_ids[@]} -eq 0 ] && exit 0
-
-    # Exit if only one window (nothing to group)
-    [ ''${#window_ids[@]} -eq 1 ] && exit 0
-
-    # Much simpler approach: just use consume-window-into-column sequentially
-    # Focus first window
-    niri msg action focus-window --id "''${window_ids[0]}"
-
-    # Consume each subsequent window into the focused column
-    for ((i=1; i<''${#window_ids[@]}; i++)); do
-        window_id="''${window_ids[i]}"
-        niri msg action focus-window --id "$window_id"
-        niri msg action consume-window-into-column
-    done
-
-    # Toggle the column to tabbed display
-    niri msg action focus-window --id "''${window_ids[0]}"
-    niri msg action toggle-column-tabbed-display
-  '';
-
   switch-preset-column-width-all = pkgs.writeShellScript "switch-preset-column-width-all" ''
     active_workspace=$(${niri} msg -j workspaces | ${jq} -r '.[] | select(.is_active == true) | .id')
     # Get all windows and filter for current workspace
@@ -147,6 +101,11 @@ let
   kill-active-force = pkgs.writeShellScript "niri-kill-active-force.sh" ''
     ${niri} msg -j focused-window | ${jq} '.pid' | ${pkgs.findutils}/bin/xargs -L 1 kill -9
   '';
+
+  workspaceFocusAction = wsName:
+    if osConfig.nixcfg-niri.desktop.cycleColumnsOnRepeatedWorkspaceFocus
+    then { spawn = [ "${focus-or-cycle-workspace}" wsName ]; }
+    else { focus-workspace = wsName; };
 
   focus-or-cycle-workspace = pkgs.writeShellScript "focus-or-cycle-workspace" ''
     TARGET_WS="$1"
@@ -170,59 +129,15 @@ let
     fi
   '';
 
-  capture-screen = pkgs.writeShellScript "niri-capture-screen.sh" ''
-    ${pkgs.grim}/bin/grim -o $(${niri} msg -j focused-output | jq -r '.name') - | ${pkgs.wl-clipboard}/bin/wl-copy -t image/png
-  '';
-
-  capture-selection = pkgs.writeShellScript "niri-capture-selection.sh" ''
-    ${pkgs.grim}/bin/grim -g "$(${pkgs.slurp}/bin/slurp -d)" - | ${pkgs.wl-clipboard}/bin/wl-copy -t image/png
-  '';
-
-  capture-window = pkgs.writeShellScript "niri-capture-window.sh" ''
-    offset_x=$(${niri} msg -j focused-window | jq -r '.layout.window_offset_in_tile[0]')
-    offset_x=$(printf "%.0f" "$offset_x")
-    offset_y=$(${niri} msg -j focused-window | jq -r '.layout.window_offset_in_tile[1]')
-    offset_y=$(printf "%.0f" "$offset_y")
-    size=$(${niri} msg -j focused-window | jq -r '.layout.window_size | join("x")')
-    offset="$offset_x,$offset_y $size"
-    ${pkgs.grim}/bin/grim -g "$offset" - | ${pkgs.wl-clipboard}/bin/wl-copy -t image/png
-  '';
-
-
   nag-graphical = pkgs.callPackage ../../../pkgs/nag-graphical {};
 
   reboot-dialog = pkgs.writeShellScript "reboot-dialog" ''
     ${nag-graphical}/bin/nag-graphical 'Reboot?' '${reboot}'
   '';
 
-  suspend-dialog = pkgs.writeShellScript "suspend-dialog" ''
-    ${nag-graphical}/bin/nag-graphical 'Suspend?' '${hyprlockCommand} suspend'
-  '';
-
-  power-off-dialog = pkgs.writeShellScript "suspend-dialog" ''
-    ${nag-graphical}/bin/nag-graphical 'Power off?' '${poweroff}'
-  '';
-
   exit-dialog = pkgs.writeShellScript "exit-dialog" ''
     ${nag-graphical}/bin/nag-graphical 'Exit Niri?' '${exit-niri}'
   '';
-
-  wallpaper-cmd = if (osConfig.hostParams.desktop.wallpaper != null) then pkgs.writeShellScript "niri-wallpaper" ''
-    killall hyprpaper
-    killall mpvpaper
-    killall swaybg
-    ${pkgs.hyprpaper}/bin/hyprpaper
-  '' else "";
-
-  wallpaper-animated = pkgs.writeShellScript "niri-wallpaper-animated" ''
-    killall hyprpaper
-    killall swaybg
-    killall mpvpaper
-    ${pkgs.mpvpaper}/bin/mpvpaper '*' -o "no-audio --panscan=1.0 --loop-file=inf --loop-playlist=inf" ~/Videos/backgrounds
-  '';
-
-  swayLockCommand = pkgs.callPackage ../../../pkgs/sway-lock-command { };
-  hyprlockCommand = pkgs.callPackage ../../../pkgs/hyprlock-command { inputs = inputs; pkgs = pkgs; };
 
   adjust-window-sizes = pkgs.writeShellScript "niri-adjust-window-sizes" ''
     last_workspace_id=""
@@ -364,10 +279,6 @@ in
       };
     };
 
-    switch-events = {
-      lid-close.action.spawn = [ "${hyprlockCommand}" "suspend" ];
-    };
-
     spawn-at-startup = [
       { sh = "systemctl --user import-environment && dbus-update-activation-environment --systemd --all && systemctl --user restart dms"; }
       { sh = "systemctl --user restart kanshi &"; }
@@ -432,39 +343,6 @@ in
         default-column-width = { fixed = 800; };
         default-window-height = { fixed = 600; };
       }
-      # Workspace assignments
-      { matches = [{ app-id = "org.chromium.Chromium$"; }]; open-on-workspace = "one"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "chromium-browser"; }]; open-on-workspace = "one"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "kitty$"; }]; open-on-workspace = "two"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "foot$"; }]; open-on-workspace = "two"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "Slack$"; }]; open-on-workspace = "three"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "spotify$"; }]; open-on-workspace = "four"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "Spotify$"; }]; open-on-workspace = "four"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "brave-browser$"; }]; open-on-workspace = "four"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "firefox$"; }]; open-on-workspace = "five"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "signal$"; }]; open-on-workspace = "six"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "Signal$"; }]; open-on-workspace = "six"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "org.telegram.desktop$"; }]; open-on-workspace = "six"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "wechat$"; }]; open-on-workspace = "six"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "discord$"; }]; open-on-workspace = "seven"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "vesktop$"; }]; open-on-workspace = "seven"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "Element$"; }]; open-on-workspace = "seven"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "^electron$"; title = "^Element"; }]; open-on-workspace = "seven"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "zoom$"; }]; open-on-workspace = "eight"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "@joplin/app-desktop$"; }]; open-on-workspace = "nine"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "Joplin$"; }]; open-on-workspace = "nine"; default-column-width = { proportion = 1.0; }; }
-      { matches = [{ app-id = "joplin$"; }]; open-on-workspace = "nine"; default-column-width = { proportion = 1.0; }; }
-      # Steam
-      {
-        matches = [
-          { app-id = "steam"; }
-          { app-id = "com.valvesoftware.Steam"; }
-        ];
-        open-maximized = true;
-        open-focused = true;
-        open-on-workspace = "ten";
-        default-column-width = { proportion = 1.0; };
-      }
       { matches = [{ app-id = "^steam_app_.*$"; }]; open-fullscreen = true; open-focused = true; }
       { matches = [{ app-id = "^gamescope$"; }]; open-fullscreen = true; open-focused = true; }
     ];
@@ -479,29 +357,31 @@ in
       "Mod+Shift+Slash".action.show-hotkey-overlay = {};
 
       # Programs
-      "Mod+Return" = { hotkey-overlay.title = "Open a Terminal: foot"; action.spawn = "foot"; };
-      "Mod+P" = { hotkey-overlay.title = "Run an Application: rofi"; action.spawn = [ "${pkgs.rofi}/bin/rofi" "-show" "drun" "-theme" "~/.config/rofi/launcher.rasi" ]; };
-      "Mod+X" = { hotkey-overlay.title = "Lock the Screen: hyprlock"; allow-when-locked = true; action.spawn = "${hyprlockCommand}"; };
-      "Mod+E" = { hotkey-overlay.title = "Toggle fcitx5 daemon"; action.spawn = "${toggle-fcitx}"; };
+      "Mod+Return" = { hotkey-overlay.title = "Open a Terminal: ${osConfig.nixcfg-niri.desktop.terminal}"; action.spawn = osConfig.nixcfg-niri.desktop.terminal; };
       "Mod+Y" = { hotkey-overlay.title = "Run Kanshi"; allow-when-locked = true; action.spawn = [ "systemctl" "--user" "restart" "kanshi" ]; };
       "Super+Alt+S" = { allow-when-locked = true; hotkey-overlay = { hidden = true; }; action.spawn = [ "pkill" "orca" "||" "exec" "orca" ]; };
 
       # Volume
-      "XF86AudioRaiseVolume" = { allow-when-locked = true; action.spawn = [ "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.05+" ]; };
-      "XF86AudioLowerVolume" = { allow-when-locked = true; action.spawn = [ "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.05-" ]; };
-      "XF86AudioMute" = { allow-when-locked = true; action.spawn = [ "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle" ]; };
-      "XF86AudioMicMute" = { allow-when-locked = true; action.spawn = [ "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle" ]; };
+      "XF86AudioRaiseVolume" = { allow-when-locked = true; action.spawn = [ "${pkgs.wireplumber}/bin/wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.05+" ]; };
+      "XF86AudioLowerVolume" = { allow-when-locked = true; action.spawn = [ "${pkgs.wireplumber}/bin/wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.05-" ]; };
+      "XF86AudioMute" = { allow-when-locked = true; action.spawn = [ "${pkgs.wireplumber}/bin/wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle" ]; };
+      "XF86AudioMicMute" = { allow-when-locked = true; action.spawn = [ "${pkgs.wireplumber}/bin/wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle" ]; };
+
+      "XF86AudioPlay" = { allow-when-locked = true; action.spawn = [ "${pkgs.playerctl}/bin/playerctl" "play-pause" ]; };
+      "XF86AudioStop" = { allow-when-locked = true; action.spawn = [ "${pkgs.playerctl}/bin/playerctl" "stop" ]; };
+      "XF86AudioPrev" = { allow-when-locked = true; action.spawn = [ "${pkgs.playerctl}/bin/playerctl" "previous" ]; };
+      "XF86AudioNext" = { allow-when-locked = true; action.spawn = [ "${pkgs.playerctl}/bin/playerctl" "next" ]; };
 
       # Brightness
-      "XF86MonBrightnessUp" = { allow-when-locked = true; action.spawn = [ "brightnessctl" "--class=backlight" "set" "+11%" ]; };
-      "XF86MonBrightnessDown" = { allow-when-locked = true; action.spawn = [ "brightnessctl" "--class=backlight" "set" "10%-" ]; };
+      "XF86MonBrightnessUp" = { allow-when-locked = true; action.spawn = [ "${pkgs.brightnessctl}/bin/brightnessctl" "--class=backlight" "set" "+11%" ]; };
+      "XF86MonBrightnessDown" = { allow-when-locked = true; action.spawn = [ "${pkgs.brightnessctl}/bin/brightnessctl" "--class=backlight" "set" "10%-" ]; };
 
       # Overview
       "Mod+O" = { repeat = false; action.toggle-overview = {}; };
 
       # Close window
-      "Mod+C" = { repeat = false; hotkey-overlay.title = "Close focused window"; action.spawn = "${kill-active}"; };
-      "Mod+Shift+C" = { repeat = false; hotkey-overlay.title = "Force Close focused window"; action.spawn = "${kill-active-force}"; };
+      "Mod+Q" = { repeat = false; hotkey-overlay.title = "Close focused window"; action.spawn = "${kill-active}"; };
+      "Mod+Shift+Q" = { repeat = false; hotkey-overlay.title = "Force Close focused window"; action.spawn = "${kill-active-force}"; };
 
       # Focus & move
       "Mod+Left".action.focus-column-left = {};
@@ -571,21 +451,18 @@ in
       "Mod+Ctrl+Shift+WheelScrollUp".action.move-column-left = {};
 
       # Screenshots
-      "Ctrl+Shift+3" = { hotkey-overlay.title = "Capture Active Screen"; action.spawn = "${capture-screen}"; };
-      "Ctrl+Shift+4" = { hotkey-overlay.title = "Capture Selection"; action.spawn = "${capture-selection}"; };
-      "Ctrl+Shift+5" = { hotkey-overlay.title = "Capture Active Window"; action.spawn = "${capture-window}"; };
 
       # Workspace focus
-      "Mod+1".action.spawn = [ "${focus-or-cycle-workspace}" "one" ];
-      "Mod+2".action.spawn = [ "${focus-or-cycle-workspace}" "two" ];
-      "Mod+3".action.spawn = [ "${focus-or-cycle-workspace}" "three" ];
-      "Mod+4".action.spawn = [ "${focus-or-cycle-workspace}" "four" ];
-      "Mod+5".action.spawn = [ "${focus-or-cycle-workspace}" "five" ];
-      "Mod+6".action.spawn = [ "${focus-or-cycle-workspace}" "six" ];
-      "Mod+7".action.spawn = [ "${focus-or-cycle-workspace}" "seven" ];
-      "Mod+8".action.spawn = [ "${focus-or-cycle-workspace}" "eight" ];
-      "Mod+9".action.spawn = [ "${focus-or-cycle-workspace}" "nine" ];
-      "Mod+0".action.spawn = [ "${focus-or-cycle-workspace}" "ten" ];
+      "Mod+1".action = workspaceFocusAction "one";
+      "Mod+2".action = workspaceFocusAction "two";
+      "Mod+3".action = workspaceFocusAction "three";
+      "Mod+4".action = workspaceFocusAction "four";
+      "Mod+5".action = workspaceFocusAction "five";
+      "Mod+6".action = workspaceFocusAction "six";
+      "Mod+7".action = workspaceFocusAction "seven";
+      "Mod+8".action = workspaceFocusAction "eight";
+      "Mod+9".action = workspaceFocusAction "nine";
+      "Mod+0".action = workspaceFocusAction "ten";
 
       # Move column to workspace
       "Mod+Ctrl+1".action.move-column-to-workspace = "one";
@@ -610,7 +487,7 @@ in
       "Mod+F".action.maximize-column = {};
       "Mod+Shift+F".action.fullscreen-window = {};
       "Mod+Ctrl+F".action.expand-column-to-available-width = {};
-      "Mod+M".action.center-column = {};
+      "Mod+C".action.center-column = {};
       "Mod+Ctrl+C".action.center-visible-columns = {};
 
       # Size adjustments
@@ -624,7 +501,7 @@ in
       "Mod+Shift+Space".action.switch-focus-between-floating-and-tiling = {};
 
       # Tabs
-      "Mod+T" = { hotkey-overlay.title = "Toggle tabs"; action.spawn = "${toggle-tabbed}"; };
+      "Mod+W".action.toggle-column-tabbed-display = {};
 
       # Built-in screenshots
       "Print".action.screenshot = {};
@@ -636,13 +513,10 @@ in
 
       # Session management
       "Mod+Shift+E".action.spawn = "${exit-dialog}";
-      "Ctrl+Alt+Delete".action.quit = {};
       "Mod+Shift+R".action.spawn = "${reboot-dialog}";
-      "Mod+Shift+S".action.spawn = "${suspend-dialog}";
-      "Mod+Shift+P".action.spawn = "${power-off-dialog}";
+      "Mod+Shift+P".action.power-off-monitors = {};
 
       # Notifications
-      "Mod+N" = { hotkey-overlay.title = "Toggle notification list view"; action.spawn = [ "${pkgs.swaynotificationcenter}/bin/swaync-client" "-t" "-sw" ]; };
       "Mod+Shift+N" = { hotkey-overlay.title = "Clear notifications"; action.spawn = "${clear-notifications}"; };
       "Mod+Shift+Ctrl+N" = { hotkey-overlay.title = "Toggle notification do-not-disturb"; action.spawn = [ "${pkgs.swaynotificationcenter}/bin/swaync-client" "-d" "-sw" ]; };
 

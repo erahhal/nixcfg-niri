@@ -19,6 +19,7 @@
     # Single import for NixOS modules — includes upstream dms-shell + our config
     nixosModules.default = { ... }: {
       imports = [
+        ./modules/options.nix
         dms-shell.nixosModules.default
         dms-shell.nixosModules.greeter
         (import ./modules/desktop/niri)

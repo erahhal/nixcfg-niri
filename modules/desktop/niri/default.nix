@@ -72,6 +72,8 @@ in
       pipewire
       wireplumber
       gnome-keyring
+      bibata-cursors  # referenced by programs.niri.settings.cursor.theme
+      kanshi  # referenced by Mod+Y binding + spawn-at-startup for monitor autoconfig
     ];
 
     xdg.portal = {

@@ -2,6 +2,7 @@
 
 let
   startupApps = osConfig.hostParams.programs.startupApps;
+  forceIntel = osConfig.nixcfg-niri.desktop.startupAppsForceIntelGpu;
   wait-for-tray = (import ../../../lib/wait-for-tray.nix) pkgs;
 
   # Script that waits for DMS tray and then launches all startup apps
@@ -78,16 +79,14 @@ in
         Environment = [
           "HOME=%h"
           "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
-          # Intel GPU settings for screen sharing compatibility with Niri
+          "__EGL_VENDOR_LIBRARY_DIRS=/run/opengl-driver/share/glvnd/egl_vendor.d"
+        ] ++ lib.optionals forceIntel [
           "DRI_PRIME=0"
           "GBM_BACKEND=mesa"
           "LIBVA_DRIVER_NAME=iHD"
           "__GLX_VENDOR_LIBRARY_NAME=mesa"
-          # EGL vendor discovery path for GPU operations in screen sharing
-          "__EGL_VENDOR_LIBRARY_DIRS=/run/opengl-driver/share/glvnd/egl_vendor.d"
         ];
-        # Unset NVIDIA GPU variables that would override Intel settings
-        UnsetEnvironment = [
+        UnsetEnvironment = lib.optionals forceIntel [
           "__NV_PRIME_RENDER_OFFLOAD"
           "__VK_LAYER_NV_optimus"
         ];

@@ -1,6 +1,7 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, osConfig, ... }:
 
 let
+  cfg = osConfig.nixcfg-niri.desktop.easyeffects;
   # Digitalone1/EasyEffects-Presets - Loudness Equalizer presets
   digitalone1-presets = {
     LoudnessEqualizer = pkgs.fetchurl {
@@ -93,12 +94,11 @@ let
     };
   };
 
-  # Combine all presets
-  allPresets = digitalone1-presets
-    // bundy01-presets
-    // jackhack96-presets
-    // radutek-laptop-presets
-    // thinkpad-presets;
+  # Combine presets based on enabled bundles
+  allPresets =
+    lib.optionalAttrs cfg.generic (digitalone1-presets // jackhack96-presets)
+    // lib.optionalAttrs cfg.headphoneProfiles bundy01-presets
+    // lib.optionalAttrs cfg.laptopSpeakers (radutek-laptop-presets // thinkpad-presets);
 
   # ==========================================================================
   # Impulse Response files (.irs) for Convolver effect
@@ -151,8 +151,10 @@ let
     };
   };
 
-  # Combine all impulse responses
-  allImpulseResponses = dolbyAtmosIrs // thinkpadP15Irs // thinkpadT14Irs;
+  # Combine impulse responses based on enabled bundles
+  allImpulseResponses =
+    lib.optionalAttrs cfg.dolbyAtmos dolbyAtmosIrs
+    // lib.optionalAttrs cfg.thinkpadDolby (thinkpadP15Irs // thinkpadT14Irs);
 in
 {
   # Install presets to ~/.local/share/easyeffects/output/

@@ -30,7 +30,7 @@ let
       checkMethod = osConfig.hostParams.networking.networkMonitor.normalEndpoint.method;
       normalEndpoint = osConfig.hostParams.networking.networkMonitor.normalEndpoint.endpoint;
       vpnEndpoints = osConfig.hostParams.networking.networkMonitor.vpnEndpoints;
-      vpnInterfaces = ["tailscale0" "wg0" "tun0"];
+      vpnInterfaces = builtins.attrNames osConfig.hostParams.networking.networkMonitor.vpnEndpoints;
     };
     easyEffects = {
       enabled = true;
@@ -317,9 +317,9 @@ let
     ## Weather
     weatherEnabled = true;
     useAutoLocation = true;
-    weatherLocation = "Los Angeles, CA";
-    weatherCoordinates = "34.1509, 118.4487";
-    useFahrenheit = true;
+    weatherLocation = osConfig.nixcfg-niri.desktop.weather.location;
+    weatherCoordinates = osConfig.nixcfg-niri.desktop.weather.coordinates;
+    useFahrenheit = osConfig.nixcfg-niri.desktop.weather.useFahrenheit;
 
     ## Night Mode
     nightModeEnabled = true;
@@ -339,7 +339,7 @@ in
     ./easyeffects.nix
   ];
 
-  home.file."Wallpaper".source = ../../../wallpapers;
+  home.file."Wallpaper".source = osConfig.nixcfg-niri.desktop.wallpaper;
 
   # Add PATH, Qt theme, and PassEnvironment to dms systemd service via drop-in override.
   # The main dms.service unit is created by the NixOS programs.dms-shell module;
@@ -418,7 +418,10 @@ in
       });
 
       # Theme toggle
-      "Mod+Shift+T" = lib.mkForce { hotkey-overlay.title = "Toggle Dark/Light Theme"; action.spawn = [ "toggle-theme" ]; };
+      "Mod+Shift+T" = lib.mkIf (osConfig.nixcfg-niri.desktop.themeToggleCommand != null) (lib.mkForce {
+        hotkey-overlay.title = "Toggle Dark/Light Theme";
+        action.spawn = [ osConfig.nixcfg-niri.desktop.themeToggleCommand ];
+      });
 
       # Power actions
       "Mod+Shift+S" = lib.mkForce { hotkey-overlay.title = "Suspend"; action.spawn = "${suspend-dialog}"; };
