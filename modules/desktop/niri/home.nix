@@ -35,6 +35,10 @@ let
     systemctl reboot
   '';
 
+  kill-apps = pkgs.writeShellScript "kill-apps" ''
+    ${killAppsScript}
+  '';
+
   kill-active = pkgs.writeShellScript "niri-kill-active.sh" ''
     if [ "$(${niri} msg -j focused-window | ${jq} -r ".app_id")" = "Steam" ]; then
         ${pkgs.xdotool}/bin/xdotool getactivewindow windowunmap
@@ -514,6 +518,7 @@ in
       # Session management
       "Mod+Shift+E".action.spawn = "${exit-dialog}";
       "Mod+Shift+R".action.spawn = "${reboot-dialog}";
+      "Mod+Ctrl+Q" = { repeat = false; hotkey-overlay.title = "Kill session apps"; action.spawn = "${kill-apps}"; };
       "Mod+Shift+P".action.power-off-monitors = {};
 
       # Notifications
