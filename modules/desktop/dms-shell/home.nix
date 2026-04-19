@@ -327,6 +327,16 @@ let
     ## Theme
     # currentThemeName = "custom";
     # customThemeFile = theme-tokyonight;
+
+    # Don't let DMS write org.gnome.desktop.interface/color-scheme. Its
+    # PortalService.qml hardcodes `"default"` for light mode (should be
+    # `"prefer-light"`), which xdg-desktop-portal translates to uint32 0
+    # ("no preference"). Electron/Chromium apps (Chromium, Brave, Signal,
+    # Joplin, Vesktop) receive that as "no change" and stay on their old
+    # theme, ignoring the subsequent correction. toggle-theme handles the
+    # color-scheme dconf write itself, so DMS's sync is redundant and
+    # actively harmful.
+    syncModeWithPortal = false;
   };
 
   # Default session - written to default-session.json and synced to session.json on activation
