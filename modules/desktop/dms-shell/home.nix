@@ -351,10 +351,17 @@ in
 
   home.file."Wallpaper".source = osConfig.nixcfg-niri.desktop.wallpaper;
 
-  # Add PATH, Qt theme, and PassEnvironment to dms systemd service via drop-in override.
-  # The main dms.service unit is created by the NixOS programs.dms-shell module;
-  # using a drop-in avoids replacing the full unit (which would lose ExecStart).
+  # Add PATH, Qt theme, PassEnvironment, and restart throttling to dms systemd service
+  # via drop-in override. The main dms.service unit is created by the NixOS
+  # programs.dms-shell module; using a drop-in avoids replacing the full unit
+  # (which would lose ExecStart).
   xdg.configFile."systemd/user/dms.service.d/override.conf".text = ''
+    [Unit]
+    # Throttle restarts: max 3 within 5 minutes, then stop trying.
+    # Prevents bar stacking when quickshell crash-loops.
+    StartLimitBurst=3
+    StartLimitIntervalSec=300
+
     [Service]
     Environment=PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin
     # Use qt6ct platform theme for icon discovery
@@ -372,6 +379,10 @@ in
     PassEnvironment=NIX_XDG_DESKTOP_PORTAL_DIR
     PassEnvironment=XCURSOR_SIZE XCURSOR_THEME
     PassEnvironment=LD_LIBRARY_PATH
+    # Wait 5s between restarts instead of 100ms default
+    RestartSec=5
+    # Treat SIGTERM as clean exit (systemctl stop sends SIGTERM = exit 143)
+    SuccessExitStatus=143
   '';
 
   # Clear Quickshell QML bytecode cache on activation so plugin changes take effect.

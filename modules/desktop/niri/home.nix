@@ -347,6 +347,8 @@ in
         default-column-width = { fixed = 800; };
         default-window-height = { fixed = 600; };
       }
+      # Steam dialogs (not main window)
+      { matches = [{ app-id = "^steam$"; }]; excludes = [{ title = "^Steam$"; }]; open-floating = true; default-column-width = { fixed = 1280; }; }
       { matches = [{ app-id = "^steam_app_.*$"; }]; open-fullscreen = true; open-focused = true; }
       { matches = [{ app-id = "^gamescope$"; }]; open-fullscreen = true; open-focused = true; }
     ];
