@@ -173,10 +173,10 @@ let
           id = "systemTray";
           enabled = true;
         }
-        {
-          id = "clipboard";
-          enabled = true;
-        }
+        # {
+        #   id = "clipboard";
+        #   enabled = true;
+        # }
         {
           id = "cpuUsage";
           enabled = true;
@@ -340,9 +340,9 @@ let
   };
 
   # Default session - written to default-session.json and synced to session.json on activation
-  defaultSession = lib.optionalAttrs (wallpaperPath != null) {
-    wallpaperPath = wallpaperPath;
-  };
+  defaultSession =
+    (lib.optionalAttrs (wallpaperPath != null) { wallpaperPath = wallpaperPath; })
+    // { hiddenTrayIds = osConfig.nixcfg-niri.desktop.hiddenTrayIds; };
 in
 {
   imports = [

@@ -29,6 +29,17 @@
         default = [];
         description = "Process names to pkill before session exit/reboot/poweroff.";
       };
+      hiddenTrayIds = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [];
+        description = ''
+          StatusNotifierItem IDs to hide from the DMS system tray. Written to
+          session.json's hiddenTrayIds. Find IDs by hiding an icon via the DMS UI
+          then reading ~/.local/state/DankMaterialShell/session.json. Electron/Chromium
+          apps often embed window titles or notification counts in their IDs, which
+          makes exact-match hides brittle.
+        '';
+      };
       cycleColumnsOnRepeatedWorkspaceFocus = lib.mkOption {
         type = lib.types.bool;
         default = true;
