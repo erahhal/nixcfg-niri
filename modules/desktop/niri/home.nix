@@ -116,7 +116,7 @@ let
     [ -z "$TARGET_WS" ] && exit 1
 
     # Get current active workspace name
-    CURRENT_WS=$(${niri} msg -j workspaces | ${jq} -r '.[] | select(.is_active == true) | .name')
+    CURRENT_WS=$(${niri} msg -j workspaces | ${jq} -r '.[] | select(.is_focused == true) | .name')
 
     if [ "$CURRENT_WS" = "$TARGET_WS" ]; then
       # Already on target workspace - cycle columns with wrap
