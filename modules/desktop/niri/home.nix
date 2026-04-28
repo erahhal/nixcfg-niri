@@ -338,6 +338,13 @@ in
         default-column-width = { fixed = 600; };
         default-window-height = { fixed = 800; };
       }
+      # Ivanti Pulse Auth Dialog
+      {
+        matches = [{ app-id = "^$"; title = "^Netflix Authentication$"; }];
+        open-floating = true;
+        default-column-width = { fixed = 1090; };
+        default-window-height = { fixed = 930; };
+      }
       # File dialogs
       {
         matches = [{ title = "^(Open File|Save As|Open Folder|Open Workspace.*|Save Workspace.*|Add Folder.*|Save File|Print|Send by Email|Export Image.*)$"; }];
