@@ -333,7 +333,7 @@ in
       }
       # Ivanti Pulse
       {
-        matches = [{ app-id = "^pulseUI$"; }];
+        matches = [{ app-id = "^.*pulseUI.*$"; }];
         open-floating = true;
         default-column-width = { fixed = 600; };
         default-window-height = { fixed = 800; };
