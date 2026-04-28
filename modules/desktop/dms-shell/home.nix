@@ -340,9 +340,9 @@ let
   };
 
   # Default session - written to default-session.json and synced to session.json on activation
-  defaultSession =
-    (lib.optionalAttrs (wallpaperPath != null) { wallpaperPath = wallpaperPath; })
-    // { hiddenTrayIds = osConfig.nixcfg-niri.desktop.hiddenTrayIds; };
+  defaultSession = lib.optionalAttrs (wallpaperPath != null) {
+    wallpaperPath = wallpaperPath;
+  };
 in
 {
   imports = [

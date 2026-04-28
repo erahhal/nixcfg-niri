@@ -331,6 +331,13 @@ in
         default-column-width = { fixed = 702; };
         default-window-height = { fixed = 616; };
       }
+      # Ivanti Pulse
+      {
+        matches = [{ app-id = "^pulseUI$"; }];
+        open-floating = true;
+        default-column-width = { fixed = 600; };
+        default-window-height = { fixed = 800; };
+      }
       # File dialogs
       {
         matches = [{ title = "^(Open File|Save As|Open Folder|Open Workspace.*|Save Workspace.*|Add Folder.*|Save File|Print|Send by Email|Export Image.*)$"; }];
