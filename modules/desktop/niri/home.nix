@@ -340,10 +340,10 @@ in
       }
       # Ivanti Pulse Auth Dialog
       {
-        matches = [{ app-id = "^$"; title = "^Netflix Authentication$"; }];
+        matches = [{ app-id = "^com.ivanti.cef-browser$"; }];
         open-floating = true;
-        default-column-width = { fixed = 1090; };
-        default-window-height = { fixed = 930; };
+        default-column-width = { fixed = 700; };
+        default-window-height = { fixed = 800; };
       }
       # File dialogs
       {
