@@ -343,6 +343,46 @@ let
   defaultSession = lib.optionalAttrs (wallpaperPath != null) {
     wallpaperPath = wallpaperPath;
   };
+
+  # Workaround for upstream Quickshell/DMS bug: PanelWindow instances bound to a
+  # disconnected screen aren't destroyed; the compositor reparents them to the
+  # surviving screen and Variants spawns a new delegate when the screen returns,
+  # leaving an orphan per dock cycle. Restart dms on output change to clear orphans.
+  dms-output-watcher = pkgs.writeShellScript "dms-output-watcher" ''
+    set -uo pipefail
+    PATH="${pkgs.niri}/bin:${pkgs.systemd}/bin:${pkgs.coreutils}/bin:$PATH"
+
+    snapshot() { niri msg outputs 2>/dev/null | sha256sum | cut -d' ' -f1; }
+
+    # Wait until niri's IPC is reachable. The watcher can start before niri
+    # has exported NIRI_SOCKET into the systemd user environment.
+    for _ in $(seq 1 60); do
+      if niri msg outputs >/dev/null 2>&1; then break; fi
+      sleep 1
+    done
+
+    prev=$(snapshot)
+    debounce_pid=""
+
+    schedule_restart() {
+      if [[ -n "$debounce_pid" ]] && kill -0 "$debounce_pid" 2>/dev/null; then
+        kill "$debounce_pid" 2>/dev/null || true
+      fi
+      ( sleep 1.5; echo "outputs changed; restarting dms" >&2; systemctl --user restart dms ) &
+      debounce_pid=$!
+    }
+
+    while IFS= read -r _; do
+      current=$(snapshot)
+      if [[ -n "$current" && "$current" != "$prev" ]]; then
+        prev="$current"
+        schedule_restart
+      fi
+    done < <(niri msg event-stream)
+
+    echo "niri event-stream closed; exiting for systemd restart" >&2
+    exit 1
+  '';
 in
 {
   imports = [
@@ -358,7 +398,9 @@ in
   xdg.configFile."systemd/user/dms.service.d/override.conf".text = ''
     [Unit]
     # Throttle restarts: max 3 within 5 minutes, then stop trying.
-    # Prevents bar stacking when quickshell crash-loops.
+    # Guards against true quickshell crash-loops. Bar-stacking on monitor
+    # disconnect/reconnect is handled by dms-output-watcher.service, not
+    # by this throttle (no crash actually occurs in that case).
     StartLimitBurst=3
     StartLimitIntervalSec=300
 
@@ -384,6 +426,24 @@ in
     # Treat SIGTERM as clean exit (systemctl stop sends SIGTERM = exit 143)
     SuccessExitStatus=143
   '';
+
+  # Watch niri's output set; restart dms when it changes. See dms-output-watcher
+  # script in the let block for the rationale (orphan PanelWindow accumulation
+  # on dock disconnect/reconnect).
+  systemd.user.services.dms-output-watcher = {
+    Unit = {
+      Description = "Restart DMS when niri outputs change (bar-stacking workaround)";
+      PartOf = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" "dms.service" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = toString dms-output-watcher;
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
 
   # Clear Quickshell QML bytecode cache on activation so plugin changes take effect.
   # Nix store files have epoch timestamps, so the QML engine can't detect source changes.

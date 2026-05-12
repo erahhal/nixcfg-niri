@@ -5,6 +5,7 @@ let
   jq = "${pkgs.jq}/bin/jq";
   ## @TODO: Move to a service
   dynamic-float-rules = pkgs.callPackage ./dynamic-float-rules.nix {};
+  urgent-focus = pkgs.callPackage ./urgent-focus.nix {};
   clear-notifications = pkgs.writeShellScript "clear-notifications" ''
     # Close all notifications by iterating through possible IDs
     # freedesktop.org CloseNotification silently ignores non-existent IDs
@@ -205,6 +206,17 @@ in
   '';
 
   programs.niri.settings = {
+    # Honor xdg-activation tokens even when the requesting client doesn't have a
+    # recent user-input serial -- this is the case for switchyard (and for tray-icon
+    # / notification clicks in Discord, Telegram, etc.). Without this flag, niri's
+    # focus-stealing prevention ignores the token, the window never gets raised,
+    # and most browsers don't fall back to setting `urgent` either -- so the new
+    # tab opens silently in the background. With it on, clicking a link in any
+    # app routes through switchyard -> browser focuses and workspace follows.
+    # niri-flake's `debug` schema takes a list of KDL args per node; an empty
+    # list means a bare flag node (i.e. KDL emits `honor-xdg-activation-with-invalid-serial`).
+    debug.honor-xdg-activation-with-invalid-serial = [];
+
     input = {
       keyboard = {
         xkb.options = "caps:escape";
@@ -287,6 +299,7 @@ in
       { sh = "systemctl --user import-environment && dbus-update-activation-environment --systemd --all && systemctl --user restart dms"; }
       { sh = "systemctl --user restart kanshi &"; }
       { sh = "${dynamic-float-rules}/bin/dynamic-float-rules &"; }
+      { sh = "${urgent-focus}/bin/niri-urgent-focus &"; }
       { sh = "systemctl --user stop xdg-desktop-portal-wlr &"; }
       { sh = "systemctl --user stop xdg-desktop-portal-hyprland &"; }
       { sh = "systemctl --user restart xdg-desktop-portal-gnome &"; }
