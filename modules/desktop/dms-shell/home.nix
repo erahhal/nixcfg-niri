@@ -33,7 +33,7 @@ let
       vpnInterfaces = builtins.attrNames osConfig.hostParams.networking.networkMonitor.vpnEndpoints;
     };
     easyEffects = {
-      enabled = true;
+      enabled = osConfig.nixcfg-niri.desktop.easyeffects.enable;
     };
     themeToggle = {
       enabled = true;
@@ -155,7 +155,7 @@ let
         }
         {
           id = "easyEffects";
-          enabled = true;
+          enabled = osConfig.nixcfg-niri.desktop.easyeffects.enable;
         }
         {
           id = "controlCenterButton";
@@ -385,7 +385,7 @@ let
   '';
 in
 {
-  imports = [
+  imports = lib.optionals osConfig.nixcfg-niri.desktop.easyeffects.enable [
     ./easyeffects.nix
   ];
 

@@ -2,6 +2,7 @@
 let
   userParams = config.hostParams.user;
   cfg = config.nixcfg.desktop.dms;
+  easyeffectsEnabled = config.nixcfg-niri.desktop.easyeffects.enable;
   dms-command-runner = pkgs.fetchFromGitHub {
     owner = "devnullvoid";
     repo = "dms-command-runner";
@@ -46,7 +47,7 @@ in
           src = dms-network-monitor;
         };
         EasyEffects = {
-          enable = true;
+          enable = easyeffectsEnabled;
           src = dms-easyeffects;
         };
         ThemeToggle = {

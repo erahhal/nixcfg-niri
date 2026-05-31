@@ -50,6 +50,19 @@
         description = "Command bound to Mod+Shift+T to toggle dark/light theme. null = no binding (DMS override removed).";
       };
       easyeffects = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Enable EasyEffects: the systemd autostart service, the DMS shell
+            EasyEffects plugin, and the preset bundles. Set to false to skip
+            installing the daemon and DMS integration entirely.
+
+            Disable on hosts where EasyEffects' virtual source intercepts
+            Bluetooth headset recording streams and breaks WirePlumber's
+            A2DP->HSP autoswitch.
+          '';
+        };
         generic = lib.mkOption {
           type = lib.types.bool;
           default = true;
