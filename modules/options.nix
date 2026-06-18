@@ -89,6 +89,48 @@
           description = "Install ThinkPad-specific Dolby impulse responses (P15 + T14 profiles).";
         };
       };
+      persona = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Install Persona-Quickshell (a Persona 3 Reload-styled Quickshell
+            shell) for on-demand use alongside DankMaterialShell. Adds the
+            `persona` command (run the full shell in the foreground) and two
+            niri keybinds: persona.toggleKey switches between DMS and Persona
+            (only one shell runs at a time), and persona.launcherKey opens
+            Persona's launcher when Persona is running or the DMS launcher
+            otherwise.
+
+            DankMaterialShell remains the session shell until you switch;
+            nothing is autostarted. Note: Persona is Hyprland-oriented and falls
+            back to a generic Wayland toplevel list under niri (no live
+            workspace integration).
+          '';
+        };
+        toggleKey = lib.mkOption {
+          type = lib.types.str;
+          default = "Mod+D";
+          description = ''
+            Niri keybind that switches shells: stops the dms service and starts
+            Persona (daemonized) when Persona is not running, or kills Persona
+            and restarts dms when it is. Requires persona.enable.
+          '';
+        };
+        launcherKey = lib.mkOption {
+          type = lib.types.str;
+          default = "Mod+P";
+          description = ''
+            Niri keybind for the app launcher. Toggles Persona's launcher when
+            the Persona shell is running, otherwise the DankMaterialShell
+            spotlight launcher. Requires persona.enable.
+
+            Defaults to Mod+P, which DankMaterialShell also binds with mkForce;
+            the persona module overrides that binding (lib.mkOverride) while
+            enabled.
+          '';
+        };
+      };
     };
   };
 }

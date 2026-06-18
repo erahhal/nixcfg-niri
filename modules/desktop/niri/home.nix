@@ -186,6 +186,7 @@ in
   imports = [
     ../dms-shell/home.nix
     ./hyprlock.nix
+    ../persona-quickshell/home.nix
   ];
 
   home.packages = with pkgs; [
