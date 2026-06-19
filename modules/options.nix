@@ -131,6 +131,33 @@
           '';
         };
       };
+      hyprComp = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Install the ilyamiro "hypr-comp" Quickshell shell (vendored from the
+            author's nixos-configuration), ported toward niri, as a third
+            on-demand session shell. Adds the `hypr-comp` command (run the full
+            shell in the foreground for testing). DankMaterialShell remains the
+            session shell; nothing is autostarted.
+
+            This is a full Hyprland-oriented DE; several subsystems are degraded
+            or disabled under niri (monitor editor, keybind/submap editor,
+            workspace model). See pkgs/hypr-comp-shell.
+          '';
+        };
+        toggleKey = lib.mkOption {
+          type = lib.types.str;
+          default = "Mod+Shift+D";
+          description = ''
+            Niri keybind that switches shells to/from hypr-comp: stops the dms
+            service and starts hypr-comp (daemonized) when it is not running, or
+            kills hypr-comp and restarts dms when it is. Requires hyprComp.enable.
+            (Wired in a later stage, once the shell is confirmed to launch.)
+          '';
+        };
+      };
     };
   };
 }

@@ -187,6 +187,7 @@ in
     ../dms-shell/home.nix
     ./hyprlock.nix
     ../persona-quickshell/home.nix
+    ../hypr-comp/home.nix
   ];
 
   home.packages = with pkgs; [
