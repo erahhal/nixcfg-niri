@@ -130,7 +130,10 @@ let
 
   # Default settings - written to default-settings.json and synced to settings.json on activation
   defaultSettings = {
-    configVersion = 2;
+    # Must track the schema version DMS writes (see SettingsSpec.js /
+    # migration code). If this lags, DMS re-runs its migration on every
+    # restart against already-migrated data.
+    configVersion = 5;
     barConfigs = [{
       id = "default";
       name = "Main Bar";
@@ -164,9 +167,10 @@ let
           showBatteryIcon = false;
           showBluetoothIcon = false;
           showBrightnessIcon = false;
-          showMicIcons = true;
+          showMicIcon = true;
           showNetworkIcon = false;
           showPrinterIcon = false;
+          showScreenSharingIcon = false;
           showVpnIcon = false;
         }
         {
@@ -203,6 +207,7 @@ let
           showMicIcon = false;
           showNetworkIcon = true;
           showPrinterIcon = false;
+          showScreenSharingIcon = false;
           showVpnIcon = false;
         }
         {
@@ -250,35 +255,16 @@ let
     screenPreferences = ["all"];
     showOnLastDisplay = true;
 
-    ## Layout
-    innerPadding = 4;
-    popupGapsAuto = true;
-    popupGapsManual = 4;
-
     ## Style
+    ## (Bar styling keys like transparency/borders/autoHide moved into
+    ## barConfigs entries in config v5; per-bar defaults are fine, so
+    ## only global style keys remain here.)
     matugenTemplateFirefox = false; # disables creating firefox.css file on manual config change. What are the ramifications?
     matugenTemplateNeovim = false; # neovim themed by nixvim-config (tokyonight), not matugen
-    transparency = 1;
-    widgetTransparency = 1;
-    squareCorners = false;
-    noBackground = false;
-    gothCornersEnabled = false;
-    gothCornerRadiusOverride = false;
-    gothCornerRadiusValue = 12;
-    borderEnabled = false;
-    borderColor = "surfaceText";
-    borderOpacity = 1;
-    borderThickness = 1;
     fontScale = 1;
 
     ## Icons
-    dockIconsize = 24;
-
-    ## Behavior
-    visible = true;
-    autoHide = false;
-    autoHideDelay = 250;
-    openOnOverview = false;
+    dockIconSize = 24;
 
     # On Screen Display
     osdPowerProfileEnabled = true;
@@ -315,10 +301,10 @@ let
     use24HourClock = false;
 
     ## Weather
+    ## (weatherLocation/weatherCoordinates moved to session.json in config
+    ## v5 — see defaultSession below.)
     weatherEnabled = true;
     useAutoLocation = true;
-    weatherLocation = osConfig.nixcfg-niri.desktop.weather.location;
-    weatherCoordinates = osConfig.nixcfg-niri.desktop.weather.coordinates;
     useFahrenheit = osConfig.nixcfg-niri.desktop.weather.useFahrenheit;
 
     ## Night Mode
@@ -342,6 +328,10 @@ let
   # Default session - written to default-session.json and synced to session.json on activation
   defaultSession = lib.optionalAttrs (wallpaperPath != null) {
     wallpaperPath = wallpaperPath;
+  } // lib.optionalAttrs (osConfig.nixcfg-niri.desktop.weather.location != "") {
+    weatherLocation = osConfig.nixcfg-niri.desktop.weather.location;
+  } // lib.optionalAttrs (osConfig.nixcfg-niri.desktop.weather.coordinates != "") {
+    weatherCoordinates = osConfig.nixcfg-niri.desktop.weather.coordinates;
   };
 
   # Workaround for upstream Quickshell/DMS bug: PanelWindow instances bound to a
