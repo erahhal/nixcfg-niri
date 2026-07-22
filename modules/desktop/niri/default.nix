@@ -1,4 +1,4 @@
-{ config, inputs, lib, pkgs, ... }:
+{ config, inputs, lib, pkgs, greyline, ... }:
 let
   userParams = config.hostParams.user;
   niri-script = pkgs.writeShellScriptBin "niri" ''
@@ -130,6 +130,10 @@ in
     home-manager.users.${userParams.username} = { pkgs, ... }: {
       imports = [
         ./home.nix
+        # Upstream greyline home-manager module (services.greyline), threaded
+        # from flake.nix via _module.args. Our option mapping lives in
+        # ../greyline/home.nix (imported through ./home.nix).
+        greyline.homeManagerModules.default
       ];
 
       ## These need to be installed as well as the ones at the system level

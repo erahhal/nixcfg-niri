@@ -158,6 +158,56 @@
           '';
         };
       };
+
+      greyline = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Install greyline (github:cothinking-dev/greyline), a live world-time
+            desktop wallpaper — a modern recreation of the classic ThinkPad
+            "World Time" Active Desktop. Renders a world map with clocks and a
+            day/night terminator to a PNG once per minute (systemd user timer),
+            then hands it to the wallpaper backend.
+
+            With the default swww backend greyline runs its own swww daemon and
+            paints the wallpaper directly, which works well under niri.
+            DankMaterialShell also manages the wallpaper, so on a host where
+            greyline should be visible disable the DMS wallpaper (e.g. set
+            hostParams.desktop.wallpaper = null) to keep two background layers
+            from fighting.
+          '';
+        };
+        backend = lib.mkOption {
+          type = lib.types.enum [ "auto" "sway" "swww" "hyprpaper" "x11" "command" ];
+          default = "swww";
+          description = ''
+            Wallpaper backend greyline hands each rendered frame to. "swww" (the
+            default) makes greyline own the wallpaper via its own swww daemon.
+            "command" uses services.greyline.command with {path}/{output}
+            substitution to hand off to an external mechanism instead.
+          '';
+        };
+        fontFamily = lib.mkOption {
+          type = lib.types.str;
+          default = "Aporetic Sans";
+          description = "Font family greyline renders clock/label text with (resolved via fontconfig).";
+        };
+        interval = lib.mkOption {
+          type = lib.types.str;
+          default = "*:*:00";
+          description = "systemd OnCalendar expression controlling how often greyline re-renders. Default is once per minute.";
+        };
+        settings = lib.mkOption {
+          type = lib.types.attrs;
+          default = {};
+          description = ''
+            Freeform greyline settings written to ~/.config/greyline/config.toml
+            (theme, format, twilight, home tz, city list, etc.). Empty uses the
+            package's bundled defaults. See the greyline README for the schema.
+          '';
+        };
+      };
     };
   };
 }

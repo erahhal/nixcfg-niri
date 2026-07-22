@@ -13,9 +13,14 @@
       url = "github:sodiboo/niri-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    greyline = {
+      url = "github:cothinking-dev/greyline";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, dms-shell, niri-flake, ... }: {
+  outputs = { self, nixpkgs, dms-shell, niri-flake, greyline, ... }: {
     # Single import for NixOS modules — includes upstream dms-shell + our config
     nixosModules.default = { ... }: {
       imports = [
@@ -26,6 +31,10 @@
         (import ./modules/desktop/dms-shell)
       ];
 
+      # Thread the greyline flake to downstream modules so
+      # modules/desktop/niri/default.nix can import its home-manager module
+      # (services.greyline) into the per-user home config.
+      _module.args.greyline = greyline;
     };
 
     # Home modules for per-user import (NOT sharedModules — osConfig isn't available there)

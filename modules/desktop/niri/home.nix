@@ -188,6 +188,7 @@ in
     ./hyprlock.nix
     ../persona-quickshell/home.nix
     ../hypr-comp/home.nix
+    ../greyline/home.nix
   ];
 
   home.packages = with pkgs; [
