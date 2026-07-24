@@ -70,6 +70,12 @@ in
               // disable the "Important Hotkeys" pop-up at startup.
               skip-at-startup
           }
+
+          // Blank the monitor after 60s of inactivity at the greeter and power
+          // it back on when input resumes. niri has no built-in idle timer, so
+          // drive it with swayidle (the desktop session uses hypridle the same
+          // way). Absolute store paths since the greeter runs with a minimal PATH.
+          spawn-at-startup "${pkgs.swayidle}/bin/swayidle" "-w" "timeout" "60" "${pkgs.niri}/bin/niri msg action power-off-monitors" "resume" "${pkgs.niri}/bin/niri msg action power-on-monitors"
         '';
       };
     };
