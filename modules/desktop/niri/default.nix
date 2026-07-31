@@ -103,9 +103,13 @@ in
       ];
     };
 
-    # Ignore lid switch, and let wm handle it using
-    # the lid switch bindings below
-    services.logind.settings.Login.HandleLidSwitch = "ignore";
+    # Lid switch. Default ("compositor") ignores it here so the wm handles it
+    # via switch-events.lid-close (see dms-shell/home.nix); any other value
+    # hands the lid to logind and drops that binding. Never both -- see
+    # nixcfg-niri.desktop.lidCloseAction for why the two race.
+    services.logind.settings.Login.HandleLidSwitch =
+      let action = config.nixcfg-niri.desktop.lidCloseAction;
+      in if action == "compositor" then "ignore" else action;
 
     ## See: https://yalter.github.io/niri/Nvidia.html
     environment.etc."nvidia/nvidia-application-profiles-rc.d/50-limit-free-buffer-pool-in-wayland-compositors.json" = {

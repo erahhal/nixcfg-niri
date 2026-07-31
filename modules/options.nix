@@ -49,6 +49,38 @@
         default = null;
         description = "Command bound to Mod+Shift+T to toggle dark/light theme. null = no binding (DMS override removed).";
       };
+      lidCloseAction = lib.mkOption {
+        type = lib.types.enum [
+          "compositor" "ignore" "lock" "suspend" "hibernate" "hybrid-sleep"
+          "suspend-then-hibernate" "poweroff"
+        ];
+        default = "compositor";
+        description = ''
+          Who handles lid close, and what they do. Exactly one handler is ever
+          wired up:
+
+          - "compositor" (default): logind's HandleLidSwitch is set to "ignore"
+            and niri's switch-events.lid-close spawns the dms-suspend script
+            (lock, then plain `systemctl suspend`).
+          - anything else: the value is passed straight to logind's
+            HandleLidSwitch, and niri's lid-close binding is left unset.
+
+          Do not try to get both: logind freezes user.slice within about a
+          second of the lid event, before dms-suspend reaches its `systemctl
+          suspend`. The frozen request survives the whole sleep and fires
+          milliseconds after the next resume, so opening the lid shows the lock
+          screen and then immediately re-suspends the machine.
+
+          Locking is preserved without the compositor handler — hypridle's
+          before_sleep_cmd (dmsLockProgram = "hyprlock") or DMS's
+          lockBeforeSuspend/loginctlLockIntegration (dmsLockProgram = "dms")
+          both lock on the way into sleep regardless of who triggered it.
+
+          "suspend-then-hibernate" additionally needs systemd.sleep settings
+          (HibernateDelaySec, and usually HibernateOnACPower) configured on the
+          host; this option only selects the lid action.
+        '';
+      };
       easyeffects = {
         enable = lib.mkOption {
           type = lib.types.bool;

@@ -499,7 +499,13 @@ in
       "Ctrl+Alt+Delete" = lib.mkForce { action.quit = {}; };
     };
 
-    switch-events.lid-close = lib.mkForce { action.spawn = [ "${dms-suspend}" ]; };
+    # Only bind the lid when the compositor owns it. With logind handling the
+    # lid instead, this script gets frozen mid-`sleep` by logind's suspend and
+    # its `systemctl suspend` lands on the next resume, re-suspending the
+    # machine seconds after the lid is opened.
+    switch-events = lib.optionalAttrs (osConfig.nixcfg-niri.desktop.lidCloseAction == "compositor") {
+      lid-close = lib.mkForce { action.spawn = [ "${dms-suspend}" ]; };
+    };
 
     spawn-at-startup = lib.optionals useHyprlock [
       { sh = "systemctl --user restart hypridle"; }
