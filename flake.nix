@@ -35,6 +35,11 @@
       # modules/desktop/niri/default.nix can import its home-manager module
       # (services.greyline) into the per-user home config.
       _module.args.greyline = greyline;
+
+      # Thread niri-flake through as well so modules/desktop/niri/default.nix
+      # can apply its package overlay and pin the compositor to niri-unstable
+      # (upstream main) rather than niri-flake's default niri-stable.
+      _module.args.niri-flake = niri-flake;
     };
 
     # Home modules for per-user import (NOT sharedModules — osConfig isn't available there)

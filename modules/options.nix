@@ -39,6 +39,36 @@
         default = false;
         description = "Force the startup-apps systemd service to use the Intel iGPU (DRI_PRIME=0, LIBVA_DRIVER_NAME=iHD, etc.). Intended for hybrid Intel+NVIDIA laptops where screen sharing needs Intel.";
       };
+      startupWorkspace = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Named workspace to focus when the session starts, via a
+          spawn-at-startup `niri msg action focus-workspace <name>`. Use one of
+          the ten workspace names this module declares (one .. ten).
+
+          Note this fires early, right after the compositor comes up. Windows
+          that open later can still pull focus away -- see the at-startup
+          window rule in modules/desktop/niri/home.nix, which stops startup
+          apps from doing exactly that.
+
+          null leaves niri on its default (first) workspace.
+        '';
+      };
+      workspaceOutput = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Output that the ten named workspaces are pinned to, via niri's
+          `open-on-output`. Accepts a connector name ("eDP-1") or a
+          make/model/serial string.
+
+          Useful on a laptop that docks to varying monitors: pin the named
+          workspaces to the built-in panel so they keep their identity no
+          matter what else is plugged in. null lets niri place each workspace
+          on whatever output is active.
+        '';
+      };
       terminal = lib.mkOption {
         type = lib.types.str;
         default = "foot";
@@ -188,6 +218,96 @@
             kills hypr-comp and restarts dms when it is. Requires hyprComp.enable.
             (Wired in a later stage, once the shell is confirmed to launch.)
           '';
+        };
+      };
+
+      ddcInputToggle = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Bind a key that cycles an external monitor through its inputs over
+            DDC/CI (VCP feature 0x60), for machines sharing one monitor with
+            another box. Requires the monitor to speak DDC/CI and the i2c-dev
+            module to be loaded with the session user able to reach /dev/i2c-*
+            (on NixOS: hardware.i2c.enable, or ddcutil's udev rules).
+
+            The monitor and its input codes are host data -- set
+            ddcInputToggle.monitor and ddcInputToggle.inputs.
+          '';
+        };
+        key = lib.mkOption {
+          type = lib.types.str;
+          default = "Mod+G";
+          description = ''
+            Niri keybind that advances to the next configured input. Bound with
+            mkForce, so picking a key another module already claims is an
+            evaluation error rather than a silent no-op.
+          '';
+        };
+        title = lib.mkOption {
+          type = lib.types.str;
+          default = "Switch monitor input";
+          description = "Hotkey-overlay title for the bind.";
+        };
+        monitor = lib.mkOption {
+          type = lib.types.str;
+          default = "";
+          description = ''
+            Pattern identifying the monitor in `ddcutil detect` output -- a
+            model name is usually enough. The script resolves it to an I2C bus
+            number and caches that, re-detecting (with an i2c-dev reload) when
+            the cached bus stops answering.
+          '';
+        };
+        inputs = lib.mkOption {
+          type = lib.types.listOf (lib.types.submodule {
+            options = {
+              code = lib.mkOption {
+                type = lib.types.str;
+                description = "VCP feature 0x60 value for this input, e.g. \"0x0f\" (DisplayPort-1) or \"0x11\" (HDMI-1).";
+              };
+              label = lib.mkOption {
+                type = lib.types.str;
+                description = "Human-readable name shown in the notification after switching.";
+              };
+            };
+          });
+          default = [];
+          description = ''
+            Inputs to cycle through, in order. Each press reads the monitor's
+            current input and sets the next one in this list, wrapping at the
+            end. If the monitor reports an input that isn't listed, the first
+            entry is selected.
+          '';
+        };
+      };
+
+      focusedBooster = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Run niri-focused-booster (github:1Naim/niri-focused-booster) as a
+            user service: it follows niri's focused window over IPC and raises
+            that window's dmem cgroup reservation, so the app you're looking at
+            keeps its VRAM under pressure.
+
+            Only useful alongside a kernel with the dmem cgroup controller and
+            something that activates it across the hierarchy -- this option
+            just runs the niri half. Use afterUnits/wantsUnits to order it
+            behind whatever provides that.
+          '';
+        };
+        afterUnits = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [];
+          description = "Extra user units to order the booster after (e.g. the service that activates the dmem controller).";
+        };
+        wantsUnits = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [];
+          description = "Extra user units the booster pulls in. Usually the same units listed in afterUnits.";
         };
       };
 

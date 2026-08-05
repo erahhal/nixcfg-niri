@@ -3,6 +3,13 @@
 let
   niri = "${pkgs.niri}/bin/niri";
   jq = "${pkgs.jq}/bin/jq";
+  desktopCfg = osConfig.nixcfg-niri.desktop;
+  ddc = desktopCfg.ddcInputToggle;
+  # Lazy: the package asserts on monitor/inputs, so it must only be forced when
+  # the toggle is enabled (and therefore configured).
+  ddc-input-toggle = (pkgs.callPackage ../../../pkgs/ddc-input-toggle {}) {
+    inherit (ddc) monitor inputs;
+  };
   ## @TODO: Move to a service
   dynamic-float-rules = pkgs.callPackage ./dynamic-float-rules.nix {};
   urgent-focus = pkgs.callPackage ./urgent-focus.nix {};
@@ -309,7 +316,9 @@ in
       { sh = "systemctl --user restart xdg-desktop-portal-gtk &"; }
       { sh = "systemctl --user restart easyeffects &"; }
       { sh = "systemctl --user restart startup-apps"; }
-    ];
+    ] ++ lib.optional (desktopCfg.startupWorkspace != null) {
+      argv = [ "niri" "msg" "action" "focus-workspace" desktopCfg.startupWorkspace ];
+    };
 
     hotkey-overlay.skip-at-startup = true;
     prefer-no-csd = true;
@@ -321,7 +330,7 @@ in
       epsilon = 0.0001;
     };
 
-    window-rules = [
+    window-rules = lib.mkMerge [ [
       # WezTerm initial configure workaround
       { matches = [{ app-id = "^org\\.wezfurlong\\.wezterm$"; }]; default-column-width = {}; }
       # Firefox picture-in-picture
@@ -381,7 +390,23 @@ in
       { matches = [{ app-id = "^steam$"; }]; excludes = [{ title = "^Steam$"; }]; open-floating = true; default-column-width = { fixed = 1280; }; }
       { matches = [{ app-id = "^steam_app_.*$"; }]; open-fullscreen = true; open-focused = true; }
       { matches = [{ app-id = "^gamescope$"; }]; open-fullscreen = true; open-focused = true; }
-    ];
+    ]
+    # Don't let windows opened during the login burst pull focus.
+    #
+    # Downstream configs route startup apps to per-app workspaces via
+    # `open-on-workspace`, and all of those workspaces typically live on one
+    # output. niri only skips auto-focus for windows opening on an *unfocused
+    # output* -- same output, different workspace still focuses, which drags
+    # the view along. With eight startup apps that's eight workspace jumps
+    # while the session comes up.
+    #
+    # `at-startup` matches only windows opened in the first 60 seconds, so
+    # normal launches are unaffected. mkAfter because the rule has to be the
+    # last `open-focused` definition to win -- downstream window-rule lists
+    # (e.g. nixcfg's user-window-rules.nix) merge ahead of this file's.
+    (lib.mkAfter [
+      { matches = [{ at-startup = true; }]; open-focused = false; }
+    ]) ];
 
     # recent-windows binds use niri defaults (Alt+Tab, Mod+Tab)
 
@@ -559,19 +584,35 @@ in
 
       # Debug
       "Mod+Shift+Ctrl+T" = { hotkey-overlay.title = "Toggle debug tint"; action.toggle-debug-tint = {}; };
+    } // lib.optionalAttrs ddc.enable {
+      # mkForce so this wins over a base binding on the same key -- and errors
+      # loudly if another module force-binds it too, rather than silently losing.
+      ${ddc.key} = lib.mkForce {
+        hotkey-overlay.title = ddc.title;
+        allow-when-locked = true;
+        action.spawn = "${ddc-input-toggle}";
+      };
     };
 
-    workspaces = {
-      "01-one" = { name = "one"; };
-      "02-two" = { name = "two"; };
-      "03-three" = { name = "three"; };
-      "04-four" = { name = "four"; };
-      "05-five" = { name = "five"; };
-      "06-six" = { name = "six"; };
-      "07-seven" = { name = "seven"; };
-      "08-eight" = { name = "eight"; };
-      "09-nine" = { name = "nine"; };
-      "10-ten" = { name = "ten"; };
-    };
+    workspaces =
+      let
+        # Names are fixed (binds and open-on-workspace rules refer to them);
+        # only which output they live on is downstream configuration.
+        mkWorkspace = name: { inherit name; }
+          // lib.optionalAttrs (desktopCfg.workspaceOutput != null) {
+            open-on-output = desktopCfg.workspaceOutput;
+          };
+      in {
+        "01-one" = mkWorkspace "one";
+        "02-two" = mkWorkspace "two";
+        "03-three" = mkWorkspace "three";
+        "04-four" = mkWorkspace "four";
+        "05-five" = mkWorkspace "five";
+        "06-six" = mkWorkspace "six";
+        "07-seven" = mkWorkspace "seven";
+        "08-eight" = mkWorkspace "eight";
+        "09-nine" = mkWorkspace "nine";
+        "10-ten" = mkWorkspace "ten";
+      };
   };
 }
