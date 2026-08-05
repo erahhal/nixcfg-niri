@@ -290,6 +290,16 @@ let
     acMonitorTimeout = if useHyprlock then 999999 else 300;
     acLockTimeout = if useHyprlock then 999999 else 300;
     lockBeforeSuspend = !useHyprlock;
+    ## Autologin starts a session nobody authenticated for, so lock it as it
+    ## comes up and put that authentication back where it belongs. DMS does
+    ## this itself in Lock.qml's Component.onCompleted, which is why it is a
+    ## setting rather than a unit racing the shell for its IPC socket.
+    ## Tied to autoLogin rather than set outright: on a host with a greeter
+    ## you have just typed your password, and a lock at that moment only
+    ## asks for it twice. A hyprlock host gets nothing here — this is DMS's
+    ## lock, which that path deliberately disables — so autologin on one of
+    ## those still lands on an open desktop.
+    lockAtStartup = !useHyprlock && osConfig.hostParams.desktop.autoLogin;
     lockScreenShowPowerActions = true;
     loginctlLockIntegration = !useHyprlock;
     fadeToLockEnabled = !useHyprlock;
