@@ -69,6 +69,34 @@
           on whatever output is active.
         '';
       };
+      blankAtStartupSeconds = lib.mkOption {
+        type = lib.types.nullOr lib.types.ints.positive;
+        default = null;
+        description = ''
+          Power the monitors off this many seconds into a new session, if
+          nobody has touched the machine by then. null (default) leaves the
+          screen lit until the shell's normal monitor timeout — which on a
+          session that comes up locked is several minutes of a lit panel in
+          an empty room.
+
+          For autologin hosts that come up locked and spend most of their
+          life with nobody in front of them. Any input powers the monitors
+          back on; niri does that itself.
+
+          A one-shot, not a second idle policy. swayidle watches for the
+          first idle period of the session and fires `power-off-monitors`;
+          the `timeout` wrapped around it expires two seconds later, so a
+          repeat would need another full countdown that no longer fits. From
+          then on the shell's own timeout is the only thing that blanks the
+          screen.
+
+          Idle rather than a plain sleep, for two reasons. A boot somebody is
+          sitting through should not go dark in their face — input inside the
+          window keeps the screen on. And the window outlasts the modesets a
+          session start does anyway (output config, kanshi), each of which
+          would power a monitor blanked at t=0 straight back on.
+        '';
+      };
       terminal = lib.mkOption {
         type = lib.types.str;
         default = "foot";

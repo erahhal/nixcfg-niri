@@ -47,6 +47,19 @@ let
     ${killAppsScript}
   '';
 
+  # Turn the screen off once, early in a session nobody is attending. See
+  # nixcfg-niri.desktop.blankAtStartupSeconds for why this is an idle watch
+  # and not a sleep. The outer `timeout` is what keeps it a one-shot: two
+  # seconds after the countdown could first fire, the watcher is gone, and a
+  # second blank would have needed a whole fresh countdown inside those two
+  # seconds. Lazy binding — never forced when the option is null.
+  blank-at-startup = pkgs.writeShellScript "niri-blank-at-startup" ''
+    exec ${pkgs.coreutils}/bin/timeout ${toString (desktopCfg.blankAtStartupSeconds + 2)} \
+      ${pkgs.swayidle}/bin/swayidle -w \
+      timeout ${toString desktopCfg.blankAtStartupSeconds} \
+        '${niri} msg action power-off-monitors'
+  '';
+
   kill-active = pkgs.writeShellScript "niri-kill-active.sh" ''
     if [ "$(${niri} msg -j focused-window | ${jq} -r ".app_id")" = "Steam" ]; then
         ${pkgs.xdotool}/bin/xdotool getactivewindow windowunmap
@@ -318,6 +331,8 @@ in
       { sh = "systemctl --user restart startup-apps"; }
     ] ++ lib.optional (desktopCfg.startupWorkspace != null) {
       argv = [ "niri" "msg" "action" "focus-workspace" desktopCfg.startupWorkspace ];
+    } ++ lib.optional (desktopCfg.blankAtStartupSeconds != null) {
+      sh = "${blank-at-startup} &";
     };
 
     hotkey-overlay.skip-at-startup = true;
