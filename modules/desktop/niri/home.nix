@@ -402,7 +402,22 @@ in
         default-window-height = { fixed = 600; };
       }
       # Steam dialogs (not main window)
-      { matches = [{ app-id = "^steam$"; }]; excludes = [{ title = "^Steam$"; }]; open-floating = true; default-column-width = { fixed = 1280; }; }
+      #
+      # Steam is XWayland and picks its own size when the dialog maps, ignoring
+      # the width niri asks for -- settings/game-properties popups come up over
+      # 2200 logical px wide, way past the edge of a 1440px-wide output. Rules
+      # that apply continuously do get honoured, so cap both axes. Both are
+      # needed: capping the width alone just makes Steam reflow the dialog to
+      # ~1900px tall instead. The caps are sized to fit the smallest output any
+      # of these hosts runs (1440x810 logical, the 4K TV at scale 2.667).
+      {
+        matches = [{ app-id = "^steam$"; }];
+        excludes = [{ title = "^Steam$"; }];
+        open-floating = true;
+        default-column-width = { fixed = 1280; };
+        max-width = 1280;
+        max-height = 760;
+      }
       { matches = [{ app-id = "^steam_app_.*$"; }]; open-fullscreen = true; open-focused = true; }
       { matches = [{ app-id = "^gamescope$"; }]; open-fullscreen = true; open-focused = true; }
     ]

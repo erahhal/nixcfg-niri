@@ -45,11 +45,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1785989441,
-        "narHash": "sha256-6lpPGuDeSCavcpz6UdyuZFXKQaZ2barZegSlztcPNDo=",
+        "lastModified": 1787724359,
+        "narHash": "sha256-mv3vx5+udiUtEvk1fn7oyd9DFVDI651lVtXW79yFvyc=",
         "owner": "cothinking-dev",
         "repo": "greyline",
-        "rev": "7e05f7f1f1a8bb22449cfbe680162f5ec3c5299c",
+        "rev": "a08c45941b21419ba69d0844cf39b0603b4ac7f5",
         "type": "github"
       },
       "original": {
@@ -118,11 +118,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1786384358,
-        "narHash": "sha256-RzPPiWeUtuvymnpuEWsdtzli5w4kjZs49FqEs3/1u+I=",
+        "lastModified": 1787900134,
+        "narHash": "sha256-VYXO0XZlgj06dxJZRhrD3WoSsvq/c7+/Akyoa22pefw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "2fcb964de67fcf60b43471c55d5d99e61a9ccb5a",
+        "rev": "83199d0d373dd3ac2b9a1996b1d0263f76ab7a4c",
         "type": "github"
       },
       "original": {
