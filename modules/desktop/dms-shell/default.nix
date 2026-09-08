@@ -81,24 +81,26 @@ in
       enableDynamicTheming = true;
       enableAudioWavelength = true;
       enableCalendarEvents = false; # khal 0.13.0 fails to build (sphinx bug)
+    };
 
-      greeter = lib.mkIf (!config.hostParams.desktop.autoLogin) {
-        enable = true;
-        compositor.name = "niri";
-        logs.save = true;
-        compositor.customConfig = ''
-          hotkey-overlay {
-              // disable the "Important Hotkeys" pop-up at startup.
-              skip-at-startup
-          }
+    # Was programs.dank-material-shell.greeter until upstream split the greeter
+    # into the dank-greeter repo. Same options, new namespace.
+    programs.dms-greeter = lib.mkIf (!config.hostParams.desktop.autoLogin) {
+      enable = true;
+      compositor.name = "niri";
+      logs.save = true;
+      compositor.customConfig = ''
+        hotkey-overlay {
+            // disable the "Important Hotkeys" pop-up at startup.
+            skip-at-startup
+        }
 
-          // Blank the monitor after 60s of inactivity at the greeter and power
-          // it back on when input resumes. niri has no built-in idle timer, so
-          // drive it with swayidle (the desktop session uses hypridle the same
-          // way). Absolute store paths since the greeter runs with a minimal PATH.
-          spawn-at-startup "${pkgs.swayidle}/bin/swayidle" "-w" "timeout" "60" "${pkgs.niri}/bin/niri msg action power-off-monitors" "resume" "${pkgs.niri}/bin/niri msg action power-on-monitors"
-        '';
-      };
+        // Blank the monitor after 60s of inactivity at the greeter and power
+        // it back on when input resumes. niri has no built-in idle timer, so
+        // drive it with swayidle (the desktop session uses hypridle the same
+        // way). Absolute store paths since the greeter runs with a minimal PATH.
+        spawn-at-startup "${pkgs.swayidle}/bin/swayidle" "-w" "timeout" "60" "${pkgs.niri}/bin/niri msg action power-off-monitors" "resume" "${pkgs.niri}/bin/niri msg action power-on-monitors"
+      '';
     };
 
     # Enable automatic keyring/wallet unlock via PAM when logging in through DMS greeter

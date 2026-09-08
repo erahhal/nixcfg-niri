@@ -15,9 +15,14 @@ in
   services.greyline = {
     enable = cfg.enable;
     backend = cfg.backend;
-    fontFamily = cfg.fontFamily;
     interval = cfg.interval;
-    settings = cfg.settings;
+
+    # Upstream dropped services.greyline.fontFamily in favour of
+    # settings.font_family -- same value, written into config.toml rather than
+    # pinned onto the unit's command line. Our nixcfg-niri.desktop.greyline
+    # .fontFamily option stays as the ergonomic front door; cfg.settings is
+    # merged last so an explicit settings.font_family still wins.
+    settings = { font_family = cfg.fontFamily; } // cfg.settings;
 
     # niri exports graphical-session.target; the module defaults to
     # sway-session.target, which never activates under niri, so the timer (and

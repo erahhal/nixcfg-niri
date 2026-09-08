@@ -9,6 +9,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # The greeter used to ship inside DankMaterialShell as
+    # `nixosModules.greeter` / `programs.dank-material-shell.greeter`. Upstream
+    # split it out into its own repo; the DMS output is now an empty module that
+    # only warns. Options carried over one-to-one under `programs.dms-greeter`.
+    dank-greeter = {
+      url = "github:AvengeMedia/dank-greeter";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     niri-flake = {
       url = "github:sodiboo/niri-flake";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -20,13 +29,13 @@
     };
   };
 
-  outputs = { self, nixpkgs, dms-shell, niri-flake, greyline, ... }: {
+  outputs = { self, nixpkgs, dms-shell, dank-greeter, niri-flake, greyline, ... }: {
     # Single import for NixOS modules — includes upstream dms-shell + our config
     nixosModules.default = { ... }: {
       imports = [
         ./modules/options.nix
         dms-shell.nixosModules.default
-        dms-shell.nixosModules.greeter
+        dank-greeter.nixosModules.default
         (import ./modules/desktop/niri)
         (import ./modules/desktop/dms-shell)
       ];
