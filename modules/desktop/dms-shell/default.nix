@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, dms-shell, lib, pkgs, ... }:
 let
   userParams = config.hostParams.user;
   cfg = config.nixcfg.desktop.dms;
@@ -24,6 +24,26 @@ let
 
   dms-network-monitor = pkgs.callPackage ../../../pkgs/dms-network-monitor {};
   dms-theme-toggle = pkgs.callPackage ../../../pkgs/dms-theme-toggle {};
+
+  # DMS keys each tray item by `id::tooltipTitle`, and that key indexes the
+  # user's saved order in ~/.local/state/DankMaterialShell/session.json. But
+  # tooltipTitle is mutable per the StatusNotifierItem spec: fcitx5 sets it to
+  # the active input method, so switching language changes the key, the saved
+  # order no longer matches, and the icon jumps to the end of the tray and back.
+  # Slack (notification count) and Element (unread marker) drift the same way.
+  # The patch keeps the exact-key match first and falls back to an id-only
+  # match before ranking an item into the unsorted tail.
+  #
+  # mkDmsShell is the flake's sanctioned entry point for building against our
+  # own pkgs, so this stays a single dms-shell derivation rather than pulling in
+  # a second one. Expect `patch` to fail loudly if upstream rewrites
+  # sortByPreferredOrder -- that is the signal to drop this and take theirs.
+  dms-shell-patched = (dms-shell.lib.mkDmsShell pkgs).overrideAttrs (old: {
+    postInstall = old.postInstall + ''
+      chmod -R u+w $out/share/quickshell/dms
+      patch -p1 -d $out/share/quickshell/dms < ${./patches/dms-tray-stable-order.patch}
+    '';
+  });
 in
 {
   key = "nixcfg/desktop/dms";
@@ -33,6 +53,7 @@ in
   config = lib.mkIf cfg.enable {
     programs.dank-material-shell = {
       enable = true;
+      package = dms-shell-patched;
       systemd = {
         enable = true;
         restartIfChanged = true;

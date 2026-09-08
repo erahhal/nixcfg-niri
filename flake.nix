@@ -40,6 +40,10 @@
       # can apply its package overlay and pin the compositor to niri-unstable
       # (upstream main) rather than niri-flake's default niri-stable.
       _module.args.niri-flake = niri-flake;
+
+      # And the dms-shell flake itself, so modules/desktop/dms-shell can rebuild
+      # the shell from dms-shell.lib.mkDmsShell with our QML patches applied.
+      _module.args.dms-shell = dms-shell;
     };
 
     # Home modules for per-user import (NOT sharedModules — osConfig isn't available there)

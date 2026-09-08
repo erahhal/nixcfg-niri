@@ -1,0 +1,39 @@
+--- a/Modules/DankBar/Widgets/SystemTrayBar.qml
++++ b/Modules/DankBar/Widgets/SystemTrayBar.qml
+@@ -138,13 +138,30 @@
+         const orderMap = new Map();
+         savedOrder.forEach((key, idx) => orderMap.set(key, idx));
+ 
+-        return [...items].sort((a, b) => {
+-            const keyA = getTrayItemKey(a);
+-            const keyB = getTrayItemKey(b);
+-            const orderA = orderMap.has(keyA) ? orderMap.get(keyA) : 10000 + items.indexOf(a);
+-            const orderB = orderMap.has(keyB) ? orderMap.get(keyB) : 10000 + items.indexOf(b);
+-            return orderA - orderB;
++        // getTrayItemKey() folds tooltipTitle into the key, but tooltipTitle is
++        // mutable per the SNI spec: fcitx5 rewrites it on every input-method
++        // switch, Slack on every change to its notification count. The exact
++        // key then misses savedOrder, the item is ranked into the unsorted tail,
++        // and it visibly hops out of its slot and back. Keep an id-only index as
++        // a fallback so a renamed item stays put.
++        const idOrderMap = new Map();
++        savedOrder.forEach((key, idx) => {
++            const id = key.split("::")[0];
++            if (!idOrderMap.has(id))
++                idOrderMap.set(id, idx);
+         });
++
++        const rankOf = item => {
++            const key = getTrayItemKey(item);
++            if (orderMap.has(key))
++                return orderMap.get(key);
++            const id = item?.id || "";
++            if (idOrderMap.has(id))
++                return idOrderMap.get(id);
++            return 10000 + items.indexOf(item);
++        };
++
++        return [...items].sort((a, b) => rankOf(a) - rankOf(b));
+     }
+ 
+     readonly property var allSortedTrayItems: sortByPreferredOrder(allTrayItems, _trayOrderTrigger)
