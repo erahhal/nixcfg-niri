@@ -34,6 +34,32 @@
         default = true;
         description = "When pressing Mod+<N> while already on workspace N, cycle through columns instead of doing nothing.";
       };
+      autoFocusUrgentWindows = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Run niri-urgent-focus: watch niri's event stream for
+          WindowUrgencyChanged and focus any window that raises an urgency hint.
+          Because focusing a window also switches to its workspace, this pulls
+          the session over to wherever that window lives -- which is the point
+          when clicking a link in chat should follow the browser to the tab it
+          opens on another workspace.
+
+          Set false when something raises windows on its own and dragging the
+          session between workspaces is unwanted: browser automation
+          (Playwright/Puppeteer over CDP -- `Page.bringToFront` issues an
+          xdg-activation request, which niri turns into exactly this urgency
+          hint), test runners, or any long job driving a GUI.
+
+          Turning it off does not lose the signal, it stops consuming it. The
+          hint stays set until you visit the window yourself, so
+          DankMaterialShell's workspace indicator paints that workspace in its
+          urgent colour (WorkspaceSwitcher reads window is_urgent out of
+          NiriService) and niri draws the window's border in urgent-color.
+          With auto-focus on, both are invisible in practice -- focusing the
+          window clears the flag within milliseconds of it being set.
+        '';
+      };
       startupAppsForceIntelGpu = lib.mkOption {
         type = lib.types.bool;
         default = false;

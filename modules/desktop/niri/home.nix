@@ -322,7 +322,9 @@ in
       { sh = "systemctl --user import-environment && dbus-update-activation-environment --systemd --all && systemctl --user restart dms"; }
       { sh = "systemctl --user restart kanshi &"; }
       { sh = "${dynamic-float-rules}/bin/dynamic-float-rules &"; }
-      { sh = "${urgent-focus}/bin/niri-urgent-focus &"; }
+    ] ++ lib.optional desktopCfg.autoFocusUrgentWindows {
+      sh = "${urgent-focus}/bin/niri-urgent-focus &";
+    } ++ [
       { sh = "systemctl --user stop xdg-desktop-portal-wlr &"; }
       { sh = "systemctl --user stop xdg-desktop-portal-hyprland &"; }
       { sh = "systemctl --user restart xdg-desktop-portal-gnome &"; }
