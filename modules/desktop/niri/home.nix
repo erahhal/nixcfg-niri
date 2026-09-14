@@ -228,6 +228,16 @@ in
     wallpaper = ,${osConfig.hostParams.desktop.wallpaper}
   '';
 
+  # The home-manager niri module has its own `programs.niri.package`, separate
+  # from the NixOS-level option set in default.nix, and it is the one that
+  # builds + validates config.kdl. Left at its default it points at
+  # niri-flake's niri-stable (v25.08), so every rebuild compiled a 25.08
+  # closure that never ran and validated the KDL with a different binary than
+  # the session executes. 25.08 also no longer builds against current nixpkgs
+  # (its libdisplay-info-sys 0.2.2 crate requires libdisplay-info < 0.3, which
+  # nixpkgs removed). Pin it to the same niri-unstable the session runs.
+  programs.niri.package = pkgs.niri-unstable;
+
   programs.niri.settings = {
     # Honor xdg-activation tokens even when the requesting client doesn't have a
     # recent user-input serial -- this is the case for switchyard (and for tray-icon

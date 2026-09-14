@@ -76,6 +76,20 @@ in
     #
     # Remove once YaLTeR/niri sends axis_stop for Continuous sources upstream.
     nixpkgs.overlays = [
+      # nixpkgs removed `libdisplay-info_0_2` (2026-08-04; the attr is now a
+      # throwing alias), but niri-flake's make-niri still takes it as a
+      # callPackage arg and asserts version == "0.2.0" -- stale even for the
+      # niri main rev it pins, whose Cargo.lock uses the libdisplay-info 0.3
+      # crate. Resurrect the attr as 0.3 (what nixpkgs' own niri 25.11 links
+      # against) with a faked version string to get past the assert. It has
+      # to happen at the pkgs level, before niri-flake's overlay: the assert
+      # sits in front of the derivation, so a later `.override` on the
+      # package forces it with the original throwing arg before the override
+      # can replace anything. Drop this once niri-flake moves off 0.2.
+      (final: prev: {
+        libdisplay-info_0_2 = final.libdisplay-info_0_3 // { version = "0.2.0"; };
+      })
+
       # Provides pkgs.niri-stable / pkgs.niri-unstable, built against our
       # nixpkgs rather than niri-flake's own.
       niri-flake.overlays.niri

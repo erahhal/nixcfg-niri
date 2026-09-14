@@ -25,6 +25,17 @@ let
   dms-network-monitor = pkgs.callPackage ../../../pkgs/dms-network-monitor {};
   dms-theme-toggle = pkgs.callPackage ../../../pkgs/dms-theme-toggle {};
 
+  # Who the greeter runs as, resolved exactly the way dank-greeter's own module
+  # resolves it, so the sweep below can never disagree with the tmpfiles rule
+  # that creates the directory.
+  greeterCacheDir = "/var/lib/dms-greeter";
+  greeterUser = config.services.greetd.settings.default_session.user;
+  greeterGroup =
+    let
+      group = config.users.users.${greeterUser}.group;
+    in
+    if group != "" then group else "greeter";
+
   # DMS keys each tray item by `id::tooltipTitle`, and that key indexes the
   # user's saved order in ~/.local/state/DankMaterialShell/session.json. But
   # tooltipTitle is mutable per the StatusNotifierItem spec: fcitx5 sets it to
@@ -117,6 +128,33 @@ in
           user = userParams.username;
         };
       };
+    };
+
+    systemd.services.greetd = lib.mkIf (!config.hostParams.desktop.autoLogin) {
+      # dank-greeter's preStart ends with a `chown <user>: *`, which is
+      # neither recursive nor matched by dotted names -- and the greeter
+      # unpacks its embedded QML UI into <cache>/.cache/dms-greeter-shell and
+      # keeps state under <cache>/.local. Anything under there left owned by
+      # another uid (a file the root-run preStart wrote into a subdirectory, a
+      # leftover from before the greeter moved out of DankMaterialShell onto
+      # the `greeter` user) makes the greeter fail to unpack its UI and exit
+      # before it can create a session. Sweep the whole tree so a stale owner
+      # heals itself on the next start, instead of needing a hand-typed
+      # `chown -R` from a machine that has no login screen.
+      preStart = lib.mkAfter ''
+        chown -R ${greeterUser}:${greeterGroup} ${greeterCacheDir}
+      '';
+
+      # greetd exits 0 when the greeter dies without creating a session, so
+      # Restart=on-success fires straight away; five of those inside systemd's
+      # default 10s window latch the unit `failed`, and only `systemctl
+      # reset-failed greetd` clears it. Back off between restarts and drop the
+      # limit, so a failing greeter keeps retrying and recovers by itself once
+      # the cause is gone. A permanently broken greeter then loops on tty1
+      # rather than dying, which is the better of the two: tty2-6 still have a
+      # getty either way.
+      serviceConfig.RestartSec = "2s";
+      startLimitIntervalSec = 0;
     };
   };
 }
