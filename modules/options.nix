@@ -60,6 +60,30 @@
           window clears the flag within milliseconds of it being set.
         '';
       };
+      batteryNotify.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Run battery-notify: keep one persistent desktop notification on
+          screen for as long as UPower reports the machine is on battery,
+          stepping it through UPower's own low / critical / action levels,
+          and show a short "external power connected" confirmation when AC
+          returns.
+
+          Exists because a charger that is plugged in but not delivering
+          (dead port, loose cable, dropped PD contract) is invisible: the
+          embedded controller reports "no AC" exactly as if nothing were
+          plugged in, the bar's battery icon quietly changes, and the first
+          unmissable signal was an emergency hibernate at 2%. The
+          confirmation toast is the tell -- it never appears for a cable that
+          is not delivering.
+
+          Only takes effect on hosts with services.upower enabled. While
+          active, DankMaterialShell's own low/critical battery alerts are
+          switched off so nothing fires twice. `battery-notify --test` walks
+          the ladder on demand.
+        '';
+      };
       startupAppsForceIntelGpu = lib.mkOption {
         type = lib.types.bool;
         default = false;

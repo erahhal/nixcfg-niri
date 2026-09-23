@@ -209,6 +209,7 @@ in
     ../persona-quickshell/home.nix
     ../hypr-comp/home.nix
     ../greyline/home.nix
+    ../battery-notify/home.nix
   ];
 
   home.packages = with pkgs; [
@@ -220,6 +221,10 @@ in
     wdisplays
     wlr-randr
     nag-graphical
+    # notify-send. DMS shells out to it (battery alerts, keybind test,
+    # portal notices) and it was installed nowhere, so those calls failed
+    # silently -- the critical-battery alert never showed once.
+    libnotify
   ];
 
   xdg.configFile."hypr/hyprpaper.conf".text = lib.mkIf (osConfig.hostParams.desktop.wallpaper != null) ''

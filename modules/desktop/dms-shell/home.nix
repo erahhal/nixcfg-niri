@@ -8,6 +8,10 @@ let
 
   useHyprlock = osConfig.hostParams.desktop.dmsLockProgram == "hyprlock";
 
+  # Mirrors the gate in ../battery-notify/home.nix.
+  batteryNotifyActive =
+    osConfig.nixcfg-niri.desktop.batteryNotify.enable && osConfig.services.upower.enable;
+
   pidof = "${pkgs.procps}/bin/pidof";
 
   # Hyprlock lock command with guard against duplicate instances
@@ -333,6 +337,13 @@ let
     # color-scheme dconf write itself, so DMS's sync is redundant and
     # actively harmful.
     syncModeWithPortal = false;
+  } // lib.optionalAttrs batteryNotifyActive {
+    # battery-notify (../battery-notify/home.nix) owns battery alerts: one
+    # persistent notification for the whole on-battery episode, stepped
+    # through UPower's own levels. DMS's built-ins would double up -- its low
+    # alert is a 5 s toast and its critical alert shells out to notify-send.
+    batteryNotifyLow = false;
+    batteryNotifyCritical = false;
   };
 
   # Default session - written to default-session.json and synced to session.json on activation
