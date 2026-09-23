@@ -1,0 +1,12 @@
+{
+  "id": "idleInhibitors",
+  "name": "Idle Inhibitors",
+  "description": "Toggle idle inhibit, and right-click to see what is keeping the screen awake",
+  "version": "1.0.0",
+  "author": "erahhal",
+  "type": "widget",
+  "component": "./IdleInhibitors.qml",
+  "permissions": [
+    "settings_read"
+  ]
+}

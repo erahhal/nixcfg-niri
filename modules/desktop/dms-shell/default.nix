@@ -22,6 +22,7 @@ let
     ];
   };
 
+  dms-idle-inhibitors = pkgs.callPackage ../../../pkgs/dms-idle-inhibitors {};
   dms-network-monitor = pkgs.callPackage ../../../pkgs/dms-network-monitor {};
   dms-theme-toggle = pkgs.callPackage ../../../pkgs/dms-theme-toggle {};
 
@@ -85,6 +86,12 @@ in
         ThemeToggle = {
           enable = true;
           src = dms-theme-toggle;
+        };
+        # Replaces the stock idleInhibitor widget, which cannot report an
+        # external inhibitor on niri -- see the plugin's own header.
+        IdleInhibitors = {
+          enable = true;
+          src = dms-idle-inhibitors;
         };
       };
       enableSystemMonitoring = true;

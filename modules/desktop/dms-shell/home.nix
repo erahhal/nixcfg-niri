@@ -6,6 +6,8 @@ let
 
   nag-graphical = pkgs.callPackage ../../../pkgs/nag-graphical {};
 
+  dms-idle-inhibit-tracker = pkgs.callPackage ../../../pkgs/dms-idle-inhibit-tracker {};
+
   useHyprlock = osConfig.hostParams.desktop.dmsLockProgram == "hyprlock";
 
   # Mirrors the gate in ../battery-notify/home.nix.
@@ -41,6 +43,14 @@ let
     };
     themeToggle = {
       enabled = true;
+    };
+    idleInhibitors = {
+      enabled = true;
+      # Seconds without input before the inhibit probe can judge anything:
+      # long enough not to flag momentary inhibits, well short of the 5 min
+      # lock timeout.
+      probeSeconds = 60;
+      maxEpisodes = 10;
     };
   };
 
@@ -231,7 +241,10 @@ let
           enabled = true;
         }
         {
-          id = "idleInhibitor";
+          # The dms-idle-inhibitors plugin, not DMS's stock "idleInhibitor".
+          # Same left-click toggle, plus a right-click list of what is holding
+          # the screen awake -- which the stock widget cannot report on niri.
+          id = "idleInhibitors";
           enabled = true;
         }
         {
@@ -573,5 +586,31 @@ in
   # so it runs after NIRI_SOCKET and session env are available
   systemd.user.services.hypridle.Install.WantedBy = lib.mkIf useHyprlock (lib.mkForce []);
 
-  home.packages = lib.mkIf useHyprlock [ pkgs.hypridle ];
+  # Records who holds an org.freedesktop.ScreenSaver idle inhibit, which is
+  # otherwise unknowable: niri owns that bus name and implements only
+  # Inhibit/UnInhibit, so there is nothing to query after the fact. The
+  # idleInhibitors widget reads what this writes.
+  systemd.user.services.dms-idle-inhibit-tracker = {
+    Unit = {
+      Description = "Track org.freedesktop.ScreenSaver idle inhibitors";
+      PartOf = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${dms-idle-inhibit-tracker}/bin/dms-idle-inhibit-tracker";
+      Restart = "on-failure";
+      RestartSec = 5;
+      # Passive bus observer that writes one JSON file; it needs nothing else.
+      PrivateDevices = true;
+      ProtectHome = "read-only";
+      ProtectSystem = "strict";
+      RuntimeDirectory = "dms-idle-inhibit-tracker";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
+  # The widget shells out to `dms-idle-inhibitors`, so it has to be on the
+  # PATH that DMS inherits.
+  home.packages = [ dms-idle-inhibit-tracker ]
+    ++ lib.optional useHyprlock pkgs.hypridle;
 }
