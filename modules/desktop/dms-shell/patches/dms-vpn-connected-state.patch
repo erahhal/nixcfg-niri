@@ -1,0 +1,32 @@
+--- a/Services/DMSNetworkService.qml
++++ b/Services/DMSNetworkService.qml
+@@ -167,7 +167,16 @@
+     property string activeName: activeNames.length > 0 ? activeNames[0] : ""
+     property string activeDevice: vpnActive.length > 0 ? (vpnActive[0].device || "") : ""
+     property string activeState: vpnActive.length > 0 ? (vpnActive[0].state || "") : ""
+-    property bool vpnConnected: activeUuids.length > 0
++    // Presence of an ActiveConnection object, which NetworkManager creates the
++    // instant activation begins. This is the right test for "is there
++    // something to tear down", NOT for "is the tunnel up".
++    property bool vpnHasActive: activeUuids.length > 0
++    // Actually established. NM reports state "activating" for the whole
++    // authentication phase -- for an SSO VPN that is minutes, not the
++    // moment it is for a PSK profile -- and the bar indicator read as
++    // connected that entire time. Matches VpnProfileDelegate.isActive, so the
++    // bar and the control center now agree.
++    property bool vpnConnected: vpnActive.some(v => v.state === "activated")
+     property alias available: root.vpnAvailable
+     property alias isBusy: root.vpnIsBusy
+     property alias connected: root.vpnConnected
+@@ -1139,7 +1148,10 @@
+             return;
+         }
+ 
+-        if (vpnConnected) {
++        // Presence, not established: right-clicking the bar widget while a
++        // connection is still activating should cancel it, which a strict
++        // "activated" test would turn into a redundant connect attempt.
++        if (vpnHasActive) {
+             disconnectAllVpns();
+             return;
+         }

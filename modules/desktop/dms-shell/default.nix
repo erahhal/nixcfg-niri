@@ -50,10 +50,28 @@ let
   # own pkgs, so this stays a single dms-shell derivation rather than pulling in
   # a second one. Expect `patch` to fail loudly if upstream rewrites
   # sortByPreferredOrder -- that is the signal to drop this and take theirs.
+  # DMS reports the VPN as connected from the instant NetworkManager creates
+  # the ActiveConnection object -- `vpnConnected: activeUuids.length > 0` never
+  # looks at the connection's state. For most profiles activation is brief so
+  # nobody notices, but an SSO VPN sits in "activating" for the whole browser
+  # auth (minutes, and up to ~50 of them across a retry loop), and the bar
+  # showed a connected padlock the entire time with no tunnel up.
+  #
+  # The patch splits the two meanings rather than just tightening the one
+  # property: `vpnHasActive` keeps the presence test for "is there something to
+  # tear down" (the no-arg toggleVpn, reached by right-clicking the bar widget
+  # and from the control-center widget, must still cancel an in-progress
+  # connection), while `vpnConnected` now means established. That also stops
+  # `lastConnectedVpnUuid` recording a profile that never finished connecting.
+  #
+  # Still present upstream as of 9dc5b2c -- worth sending them. Expect `patch`
+  # to fail loudly if upstream rewrites vpnConnected; that is the signal to
+  # drop this and take theirs.
   dms-shell-patched = (dms-shell.lib.mkDmsShell pkgs).overrideAttrs (old: {
     postInstall = old.postInstall + ''
       chmod -R u+w $out/share/quickshell/dms
       patch -p1 -d $out/share/quickshell/dms < ${./patches/dms-tray-stable-order.patch}
+      patch -p1 -d $out/share/quickshell/dms < ${./patches/dms-vpn-connected-state.patch}
     '';
   });
 in
