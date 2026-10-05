@@ -18,9 +18,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Pin niri main ourselves rather than inheriting niri-flake's lock, which
+    # only advances when niri-flake itself gets a commit (it can lag months).
+    niri-unstable = {
+      url = "github:YaLTeR/niri";
+      flake = false;
+    };
+
     niri-flake = {
       url = "github:sodiboo/niri-flake";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.niri-unstable.follows = "niri-unstable";
     };
 
     greyline = {

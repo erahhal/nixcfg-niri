@@ -6,8 +6,11 @@ let
   # wrapper, programs.niri.package, KDL validation and portal configPackages --
   # resolves to this one package.
   #
-  # niri-unstable tracks niri's main branch, so `nix flake update` in this repo
-  # moves it forward. The two alternatives are both worse here:
+  # niri-unstable tracks niri's main branch. Its source is this repo's own
+  # `niri-unstable` flake input (niri-flake's is made to follow it), so
+  # `nix flake update` here moves it forward; without that follows, the rev
+  # stays at whatever niri-flake last locked. The two alternatives are both
+  # worse here:
   #   * niri-flake's default (niri-stable) is pinned to v25.08 inside
   #     niri-flake's own flake.nix. niri has since shipped v25.11 and v26.04,
   #     so it is two releases behind and `nix flake update` here does NOT move
@@ -50,31 +53,6 @@ in
     #   enable = true;
     # };
 
-    # Trackpoint scroll gets permanently latched to whichever pane it started
-    # on (most obvious in Slack, but any Chromium/Electron app can do it).
-    #
-    # niri forwards libinput's end-of-scroll event to clients as
-    # wl_pointer.axis_stop only when the axis source is Finger (touchpad).
-    # Trackpoint button-scroll reports AxisSource::Continuous, so its
-    # terminating zero-value event is dropped on the floor: vertical_amount is
-    # 0.0 so the frame.value() branch is skipped, and the stop branch is gated
-    # out, leaving the client an axis frame carrying neither a value nor a stop
-    # -- it never learns the scroll sequence ended. Chromium latches a scroll
-    # sequence to its initial target and only unlatches on that signal, so the
-    # pane keeps scrolling wherever the pointer goes. Touchpad (Finger) already
-    # sends the stop and wheels use discrete v120, which is why this looks
-    # trackpoint-specific.
-    #
-    # niri already treats Continuous like Finger for its own scroll bindings
-    # ~250 lines earlier in the same function; this is the client-facing path
-    # it missed. Still present on upstream main as of 2026-07-31, so this is
-    # not yet fixed upstream.
-    #
-    # --replace-fail means the build errors loudly rather than silently
-    # no-opping if upstream ever edits that line -- which is also the signal
-    # that this overlay can be dropped.
-    #
-    # Remove once YaLTeR/niri sends axis_stop for Continuous sources upstream.
     nixpkgs.overlays = [
       # nixpkgs removed `libdisplay-info_0_2` (2026-08-04; the attr is now a
       # throwing alias), but niri-flake's make-niri still takes it as a
@@ -95,15 +73,6 @@ in
       niri-flake.overlays.niri
 
       (final: prev: {
-        niri-unstable = prev.niri-unstable.overrideAttrs (old: {
-          postPatch = (old.postPatch or "") + ''
-            substituteInPlace src/input/mod.rs \
-              --replace-fail \
-                'if source == AxisSource::Finger {' \
-                'if source == AxisSource::Finger || source == AxisSource::Continuous {'
-          '';
-        });
-
         # Alias nixpkgs' niri to the same package. Several helper scripts across
         # this repo and nixcfg call `${pkgs.niri}/bin/niri msg ...` (dms-shell
         # idle handlers, niri-kill-active, exit-niri, mkGamescopeScript). Without
