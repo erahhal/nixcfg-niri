@@ -217,6 +217,17 @@ in
         greyline.homeManagerModules.default
       ];
 
+      # TEMPORARY: greyline's flake passes makeWrapperArgs as one string,
+      # [ "--prefix PATH : <fontconfig>/bin" ]. buildPythonApplication now
+      # defaults to __structuredAttrs = true (2026-10-20 nixpkgs bump), so the
+      # element reaches makeWrapper unsplit and it dies with "makeWrapper doesn't
+      # understand the arg". Split each element on spaces, which is a no-op once
+      # upstream lists the words separately; drop this when it does.
+      services.greyline.package =
+        greyline.packages.${pkgs.stdenv.hostPlatform.system}.default.overridePythonAttrs (old: {
+          makeWrapperArgs = lib.concatMap (lib.splitString " ") (old.makeWrapperArgs or [ ]);
+        });
+
       ## These need to be installed as well as the ones at the system level
       ## because xdg-desktop-portal is going to look in
       ## /etc/profiles/per-user/<username>/share/xdg-desktop-portal/portals

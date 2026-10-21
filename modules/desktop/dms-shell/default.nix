@@ -37,19 +37,10 @@ let
     in
     if group != "" then group else "greeter";
 
-  # DMS keys each tray item by `id::tooltipTitle`, and that key indexes the
-  # user's saved order in ~/.local/state/DankMaterialShell/session.json. But
-  # tooltipTitle is mutable per the StatusNotifierItem spec: fcitx5 sets it to
-  # the active input method, so switching language changes the key, the saved
-  # order no longer matches, and the icon jumps to the end of the tray and back.
-  # Slack (notification count) and Element (unread marker) drift the same way.
-  # The patch keeps the exact-key match first and falls back to an id-only
-  # match before ranking an item into the unsorted tail.
-  #
   # mkDmsShell is the flake's sanctioned entry point for building against our
   # own pkgs, so this stays a single dms-shell derivation rather than pulling in
-  # a second one. Expect `patch` to fail loudly if upstream rewrites
-  # sortByPreferredOrder -- that is the signal to drop this and take theirs.
+  # a second one.
+  #
   # DMS reports the VPN as connected from the instant NetworkManager creates
   # the ActiveConnection object -- `vpnConnected: activeUuids.length > 0` never
   # looks at the connection's state. For most profiles activation is brief so
@@ -70,7 +61,6 @@ let
   dms-shell-patched = (dms-shell.lib.mkDmsShell pkgs).overrideAttrs (old: {
     postInstall = old.postInstall + ''
       chmod -R u+w $out/share/quickshell/dms
-      patch -p1 -d $out/share/quickshell/dms < ${./patches/dms-tray-stable-order.patch}
       patch -p1 -d $out/share/quickshell/dms < ${./patches/dms-vpn-connected-state.patch}
     '';
   });
