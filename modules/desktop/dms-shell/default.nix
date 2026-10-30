@@ -55,7 +55,7 @@ let
   # connection), while `vpnConnected` now means established. That also stops
   # `lastConnectedVpnUuid` recording a profile that never finished connecting.
   #
-  # Still present upstream as of 9dc5b2c -- worth sending them. Expect `patch`
+  # Still present upstream as of fe70189 (stable-2.0) -- worth sending them. Expect `patch`
   # to fail loudly if upstream rewrites vpnConnected; that is the signal to
   # drop this and take theirs.
   dms-shell-patched = (dms-shell.lib.mkDmsShell pkgs).overrideAttrs (old: {

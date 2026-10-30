@@ -4,8 +4,12 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # DankMaterialShell is now Dux Shell (repo moved to duxlabs-dev/dux-shell).
+    # Tracking stable-2.0 rather than stable for the post-2.0.0 perf fixes
+    # (workspace app icons stalling the GUI thread, #3958) that haven't been
+    # tagged yet -- go back to /stable once 2.0.1 is released.
     dms-shell = {
-      url = "github:AvengeMedia/DankMaterialShell/stable";
+      url = "github:duxlabs-dev/dux-shell/stable-2.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
