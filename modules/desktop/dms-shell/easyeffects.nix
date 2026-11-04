@@ -28,7 +28,9 @@ in
       Restart = "on-failure";
       RestartSec = 2;
       ExecStartPre = "${wait-for-tray}";
-      ExecStart = "${pkgs.easyeffects}/bin/easyeffects --gapplication-service";
+      # EasyEffects 8 (Qt) keeps --gapplication-service only as a deprecated
+      # alias of --service-mode.
+      ExecStart = "${pkgs.easyeffects}/bin/easyeffects --service-mode";
       PassEnvironment = [
         "HOME"
         "XDG_DATA_HOME"

@@ -1,0 +1,70 @@
+Keep the widget from spawning EasyEffects windows.
+
+EasyEffects 8 is single-instance: a CLI call such as `easyeffects -a output`
+forwards to the running instance -- or, if none holds the lock, becomes the
+instance and opens its GUI. The widget queries the active presets every time
+it is created (login, every monitor change, every DMS restart), often before
+easyeffects.service is up, so it started GUI instances that its `timeout 10`
+wrappers then killed: a window flashing open and shut, repeatedly.
+
+Gate every CLI call on easyeffects.service owning the instance lock, check
+"running" the same way (`pgrep -x easyeffects` never matched the Nix-wrapped
+process name), and start the systemd service instead of a stray instance.
+
+--- a/EasyEffectsWidget.qml	2026-11-03 15:24:17.177377189 -0800
++++ b/EasyEffectsWidget.qml	2026-11-03 15:24:33.487936938 -0800
+@@ -18,6 +18,14 @@
+     property bool profilesLoaded: false
+     property string profileOutput: ""
+ 
++    // True only when easyeffects.service's own process holds EasyEffects'
++    // single-instance lock. Any `easyeffects` CLI call made while no instance
++    // holds it becomes the instance itself -- a full GUI window -- which the
++    // `timeout 10` wrappers then kill: the window flashes open and shut on
++    // every bar (re)creation (login, monitor change, DMS restart). The lock's
++    // first line is the holder's PID.
++    readonly property string eeReady: "pid=$(systemctl --user show -p MainPID --value easyeffects.service); [ \"${pid:-0}\" -gt 0 ] && [ \"$(head -n1 \"$XDG_RUNTIME_DIR/easyeffects.lock\" 2>/dev/null)\" = \"$pid\" ]"
++
+     Component.onCompleted: {
+         // Load profiles dynamically
+         loadProfiles.running = true
+@@ -35,7 +43,7 @@
+ 
+     Process {
+         id: checkActiveOutput
+-        command: ["sh", "-c", "timeout 10 easyeffects -a output 2>/dev/null"]
++        command: ["sh", "-c", root.eeReady + " && timeout 10 easyeffects -a output 2>/dev/null"]
+         running: false
+         stdout: SplitParser {
+             onRead: data => {
+@@ -53,7 +61,7 @@
+ 
+     Process {
+         id: checkActiveInput
+-        command: ["sh", "-c", "timeout 10 easyeffects -a input 2>/dev/null"]
++        command: ["sh", "-c", root.eeReady + " && timeout 10 easyeffects -a input 2>/dev/null"]
+         running: false
+         stdout: SplitParser {
+             onRead: data => {
+@@ -176,7 +184,9 @@
+ 
+     Process {
+         id: checkRunning
+-        command: ["pgrep", "-x", "easyeffects"]
++        // Not `pgrep -x easyeffects`: under Nix the process is named
++        // .easyeffects-wrapped, so that never matched.
++        command: ["sh", "-c", root.eeReady]
+         running: false
+ 
+         onExited: (exitCode, exitStatus) => {
+@@ -193,7 +203,9 @@
+ 
+     Process {
+         id: startProcess
+-        command: ["sh", "-c", "timeout 10 easyeffects --service-mode"]
++        // Start the managed service rather than a stray instance (which the
++        // old `timeout 10` killed again), then wait for it to hold the lock.
++        command: ["sh", "-c", "systemctl --user start easyeffects.service || exit 1; for _ in $(seq 40); do " + root.eeReady + " && exit 0; sleep 0.25; done; exit 1"]
+         running: false
+ 
+         onExited: (exitCode, exitStatus) => {

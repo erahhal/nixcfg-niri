@@ -19,6 +19,9 @@ let
     };
     patches = [
       ./patches/dms-easyeffects-fix-hang.patch
+      # Never let the widget's CLI calls become the EasyEffects instance
+      # (a GUI window that `timeout 10` then kills); details in the patch.
+      ./patches/dms-easyeffects-no-spawn.patch
     ];
   };
 
