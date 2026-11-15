@@ -375,8 +375,11 @@ in
       { matches = [{ app-id = "XEyes$"; }]; open-floating = true; }
       # Blueman
       { matches = [{ app-id = ".blueman-manager-wrapped$"; }]; open-floating = true; }
-      # Firefox extensions
-      { matches = [{ app-id = "firefox$"; title = "^Extension.*Mozilla Firefox$"; }]; open-floating = true; }
+      # Firefox extension popups (Bitwarden pop-out etc.). The app-id comes
+      # from the programs.firefox.autoConfig observer in default.nix; a title
+      # match can't work because the "Extension: (...)" title arrives after
+      # the window has mapped.
+      { matches = [{ app-id = "^firefox-extension-popup$"; }]; open-floating = true; }
       # Chromium bitwarden extension
       { matches = [{ app-id = ".*-nngceckbapebfimnlniiiahkandclblb-Default$"; }]; open-floating = true; }
       # Empty app-id and title (chromium notifications)

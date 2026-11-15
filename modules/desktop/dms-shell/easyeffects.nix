@@ -28,9 +28,13 @@ in
       Restart = "on-failure";
       RestartSec = 2;
       ExecStartPre = "${wait-for-tray}";
-      # EasyEffects 8 (Qt) keeps --gapplication-service only as a deprecated
-      # alias of --service-mode.
-      ExecStart = "${pkgs.easyeffects}/bin/easyeffects --service-mode";
+      # --service-mode alone does NOT hide the window in EasyEffects 8: it only
+      # sets enableServiceMode (keep running after the window closes). The
+      # deprecated --gapplication-service also emitted onHideWindow, so
+      # swapping it for bare --service-mode made the GUI open at every login.
+      # --hide-window sets show_window=false before Main.qml loads.
+      # (src/command_line_parser.cpp, process_hide_window / process_events)
+      ExecStart = "${pkgs.easyeffects}/bin/easyeffects --service-mode --hide-window";
       PassEnvironment = [
         "HOME"
         "XDG_DATA_HOME"

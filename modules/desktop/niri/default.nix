@@ -180,6 +180,40 @@ in
       ];
     };
 
+    # Give Firefox extension popup windows (Bitwarden's pop-out, passkey
+    # prompts, ...) their own Wayland app-id so the `firefox-extension-popup`
+    # open-floating rule in home.nix matches them when they open.
+    #
+    # Without this they can't be told apart when niri decides open-floating
+    # (at map time): a popup maps as app-id "firefox", title "Mozilla
+    # Firefox", same as any new browser window. The "Extension: (Bitwarden
+    # ...)" title only arrives once the tab has loaded, so title rules never
+    # fire and event-stream scripts can only float the window after it has
+    # already tiled (the visible jump).
+    #
+    # windows.create({type: "popup"}) marks the chrome root with
+    # `web-extension-popup-window`, and Firefox copies the root's
+    # `windowclass` attribute into the xdg_toplevel app-id when it syncs
+    # window attributes in AppWindow::OnChromeLoaded, just before first show.
+    # "browser-window-before-show" fires ahead of that, so the popup maps
+    # with the new app-id. (windowclass is dropped if windowtype is empty;
+    # browser.xhtml sets windowtype="navigator:browser", so that's fine.)
+    # Verified on Firefox 159 + niri 2026-10: the popup's first niri event is
+    # already floating.
+    programs.firefox.autoConfig = ''
+      try {
+        Services.obs.addObserver(win => {
+          const root = win.document.documentElement;
+          if (root.hasAttribute("web-extension-popup-window")) {
+            root.setAttribute("windowclass", "firefox-extension-popup");
+          }
+        }, "browser-window-before-show");
+      } catch (e) {
+        // Never let this abort the rest of mozilla.cfg.
+        if (typeof console !== "undefined") console.error("extension-popup app-id:", e);
+      }
+    '';
+
     # Lid switch. Default ("compositor") ignores it here so the wm handles it
     # via switch-events.lid-close (see dms-shell/home.nix); any other value
     # hands the lid to logind and drops that binding. Never both -- see
