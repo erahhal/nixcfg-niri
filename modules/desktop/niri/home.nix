@@ -430,14 +430,17 @@ in
       # needed: capping the width alone just makes Steam reflow the dialog to
       # ~1900px tall instead. The caps are sized to fit the smallest output any
       # of these hosts runs (1440x810 logical, the 4K TV at scale 2.667).
+      # Big Picture is excluded: the caps hold even when a window is fullscreen.
       {
         matches = [{ app-id = "^steam$"; }];
-        excludes = [{ title = "^Steam$"; }];
+        excludes = [{ title = "^Steam$"; } { title = "^Steam Big Picture Mode$"; }];
         open-floating = true;
         default-column-width = { fixed = 1280; };
         max-width = 1280;
         max-height = 760;
       }
+      # Big Picture restores its last saved windowed geometry instead of asking for fullscreen.
+      { matches = [{ app-id = "^steam$"; title = "^Steam Big Picture Mode$"; }]; open-fullscreen = true; open-focused = true; }
       { matches = [{ app-id = "^steam_app_.*$"; }]; open-fullscreen = true; open-focused = true; }
       { matches = [{ app-id = "^gamescope$"; }]; open-fullscreen = true; open-focused = true; }
     ]
